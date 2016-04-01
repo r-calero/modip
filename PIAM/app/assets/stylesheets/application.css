@@ -1,0 +1,113 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets, vendor/assets/stylesheets,
+ * or vendor/assets/stylesheets of plugins, if any, can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the top of the
+ * compiled file, but it's generally better to create a new file per style scope.
+ *
+ *= require_self
+ *= require bootstrap
+ *= require bootstrap-responsive
+ *= require_tree.
+*/
+
+.header{
+    margin-top: 0px;
+    box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.2) inset, 0px -3px 7px rgba(0, 0, 0, 0.2) inset;
+    text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.4), 0px 0px 30px rgba(0, 0, 0, 0.075);
+    position: relative;
+    background: url("banner.jpg") no-repeat;
+    background-size: cover;
+    height: 235px;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.header h1{  
+    letter-spacing: -1px;
+    line-height: 1;
+    font-size: 50px;
+    position: relative;
+	top: 100px;
+	left: 50px
+}
+.subhead{
+    border-bottom: 1px solid rgb(221, 221, 221);
+    text-align: left;
+}
+
+.subhead p{
+	color: #FFFFFF;
+    font-size: 20px;
+	position: relative;
+	top: 125px;
+    left: 10px;
+}
+
+.user-info{
+    color: #ffffff;
+}
+
+.content{
+    min-height: 380px;
+}
+
+.content-body {
+    margin-top: 20px;
+}
+
+.definition, .definition-concise{
+    border-top: 2px solid rgb(187, 187, 187);
+    border-bottom: 2px solid rgb(153, 153, 153);
+    font-size: small;
+}
+
+.definition th{
+    padding: 4px;
+    text-align: center;
+    background-color: rgb(240, 240, 240);
+}
+
+.definition p{
+    margin: 0;
+}
+
+.definition-concise th{
+    padding: 4px;
+    background-color: rgb(240, 240, 240);
+}
+
+.info-header{
+    padding-left: 5px;
+    background-color: rgb(229, 229, 229);
+    border-radius: 3px 3px 3px 3px;
+    margin-bottom: 10px;
+}
+
+
+.paginate{
+    text-align: center;
+}
+
+.user_form fieldset {
+    background: #ffffff;
+}
+.user_form legend {
+    color: #dfd;
+    background: #006dcc;
+    font-family: sans-serif;
+    padding: 0.2em 0;
+}
+.footer{
+    padding: 20px;
+    text-align: center;
+    color: #000000;
+}
+
+.footer p{
+    margin: 0;
+    padding: 0;
+}

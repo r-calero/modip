@@ -1,0 +1,39 @@
+<%= stylesheet_link_tag  '/stylesheets/index', 'compounds', :media => 'all' %>
+
+<div class="row-fluid">
+  <div class="span5">
+    <%= page_entries_info @compounds %>
+  </div>
+</div>
+
+<table class="definition table table-condensed table-hover">
+  <thead>
+   <tr>
+     <th>#</th>
+     <th><%= image_tag 'enable_download.png'%></th>
+     <th>CID</th>
+     <th>IUPAC Name</th>
+     <th>Molecular Formula</th>
+     <th>Coordinate</th>
+     <th>Coordinate Source</th>
+   </tr>
+  </thead>
+<% @compounds.each_with_index do |compound, index| %>
+  <tr>
+    <td><%= index + 1 %></td>
+    <td><%= link_to 'download', compound_download_path(:id => compound.id), :class => 'btn btn-mini btn-primary'%></td>
+    <td><%= link_to compound.cid ,compound_path(compound) %></td>
+    <td><%= compound.name %></td>
+    <td>
+    	<%= format_molecular_formula(compound.molecular_formula) do |content| %>
+    		<%= content%>
+    	<% end %>
+    </td>
+    <td><%= compound.coordinate[0..2] %></td>
+    <td> <%= compound.coordinate_source.source%></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+<div class="paginate"><%= paginate @compounds %></div>

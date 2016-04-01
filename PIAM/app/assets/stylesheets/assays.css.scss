@@ -1,0 +1,50 @@
+// Place all the styles related to the assays controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+/*---------------------------------------- show ---------------------------------------------*/
+
+
+/*----------------------------------------- index --------------------------------------------*/
+
+.assay-container {
+  margin-bottom: 20px;
+}
+.compound-container{
+  margin-bottom: 20px;
+}
+.assay-container a{
+  text-decoration: underline;
+  color: #00008b;
+}
+
+.compound-container a{
+  text-decoration: underline;
+  color: #00008b;
+}
+
+.assay-data a{
+  margin-right: 15px;
+  color: rgb(102, 102, 102);
+}
+
+.rprtid {
+  color: rgb(87, 87, 87);
+/*  display: inline;
+  margin-right: 15px;*/
+}
+
+.assay-container label{
+  margin: 0;
+  margin-right: 5px;
+  float: left;
+}
+.compound-container label{
+  margin: 0;
+  margin-right: 5px;
+  float: left;
+}
+
+.small-text{
+  font-size: 90%;
+}

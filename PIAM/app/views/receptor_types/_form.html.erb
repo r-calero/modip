@@ -1,0 +1,13 @@
+<%= form_for @receptor_type do |f|%>
+	<div class="row-fluid">
+		<div class="contro-group">
+			<div class="control-label">
+			<%= f.label :name %>
+			</div>
+			<div class="controls">
+			<%= f.text_field :name %>
+			</div>
+		</div>
+		<%= f.submit :class => "btn"%>
+	</div>
+<% end %>

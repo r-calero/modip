@@ -1,0 +1,24 @@
+<div class="row-fluid">
+<table class="definition table table-bordered">
+  <thead>
+    <tr>
+	  <th>Loop</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>  
+  <tbody>
+    <% @cycles.each do |cycle| %>
+      <tr>
+	    <td><%= cycle.name %></td>
+        <td><%= link_to 'Edit', edit_cycle_path(cycle) %></td>
+        <td><%= delete_dialog(cycle.id, cycle) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+</div>
+
+<br />
+
+<%= link_to 'New Cycle', new_cycle_path %>

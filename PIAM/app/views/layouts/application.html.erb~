@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MODIP - Molecular Docking Integrated Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <%= stylesheet_link_tag    "application", :media => "all" %>
+  <%= javascript_include_tag "application" %>
+  <%= csrf_meta_tags %>
+</head>
+<body>
+   <div class="container-fluid">
+    <div class="row-fluid">
+        <div class="header subhead span12">
+         <h1>MODIP </h1>
+          <p>Molecular Docking Integrated Platform</p>
+     </div>
+    </div>
+
+    </div>
+
+    <div class="container-fluid">
+	  <div class="row-fluid">
+       <div class="navbar navbar-fixed-top navbar-inverse">
+        <div class="navbar-inner">
+          <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </a>
+            <!-- Be sure to leave the brand out there if you want it shown -->
+            <a class="brand" href="/">MODIP</a>
+           <div class="nav-collapse collapse navbar-inverse-collapse">
+           		<div class="span3">
+      		      <ul class="nav">
+      			      <li class="active"><%= link_to "Home", home_path %></li>
+			            <li><a href="#">About</a></li>
+            			<li><%= link_to "Help", help_path %></li></li>
+          			</ul>
+          		</div>
+             <div class="span3">
+            <%= form_tag search_compound_path,  :class => "navbar-search pull-right" do %>
+                <%= text_field_tag :cid, params[:cid] , :placeholder => "Find Compound", :class => "search-query span12"%>
+            <% end %>
+             </div>
+             <div class="span4">
+               <div class="user-info">
+                 <% if session[:user_id]%>
+                     <p class="text-right" style="margin-top: 10px;">Welcome <strong> <%= User.find(session[:user_id]).name %> </strong>  <%= link_to 'Logout', logout_path, :method => :delete %></p>
+                 <% else %>
+                     <p class="text-right" style="margin-top: 10px;"> If you are register, please <%= link_to 'Login', login_path %> otherwise <%= link_to 'Register', new_user_path %> </p>
+                 <% end %>
+               </div>
+             </div>
+           </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+
+      </div>
+    </div>
+    <div class="container-fluid" style="margin-top: -20px;">
+      <div class="content row-fluid">
+        <div class="well span3" style="font-size: 18px">
+          <!--Sidebar content-->
+          <ul class="nav nav-list bs-docs-sidenav">
+
+            <li class="nav-header"> User</li>
+             <% if session[:user_id]%>
+                <li><%= link_to 'Edit', edit_user_path(session[:user_id]) %> </li>
+             <% end %>
+            <li class="divider"></li>
+            <li class="nav-header">Resources</li>
+            <li><%= link_to 'Cycles', cycles_path %></li>
+            <li><%= link_to 'Assays' , assays_path %></li>
+            <li><%= link_to 'Targets', targets_path %></li>
+            <li><%= link_to 'Compounds', compounds_path %></li>
+            <li class="divider"></li>
+            <li class="nav-header">Receptor Types</li>
+            <li><%= link_to 'All', receptor_types_path %></li>
+            <li><%= link_to 'New', new_receptor_type_path %> </li>
+            <li class="divider"></li>
+            <li class="nav-header"> Queries</li>
+            <% if session[:user_id] %>
+                <li><%= link_to 'All', user_queries_path(session[:user_id]) %></li>
+                <li><%= link_to 'New', new_user_query_path(session[:user_id]) %></li>
+            <% end %>
+            <li class="divider"></li>
+            <li class="nav-header"> Docking</li>
+            <% if session[:user_id] %>
+                <li><%= link_to 'New', docking_user_path(session[:user_id]) %></li>
+                <li><%= link_to "Ranking List", compound_rank_user_url, :method => :post%></li>
+            <% end %>
+          </ul>
+        </div>
+        <div class="content-body span9">
+          <!--Body content-->
+          <%= yield %>
+        </div>
+      </div>
+    </div>
+<div class="footer">
+      <p>Copyright&copy 2013-2015 --- CENSA-UFRJ (Cuba/Brasil)</p>
+      <p>All rights reserved</p>
+      <p>e-mail: modipserver . at . gmail.com</p>
+      <p> Acknowledgement: International Foundation for Science (IFS) and Coordenação de Aperfeiçoamento de Pessoal de Nível (CAPES)</p>
+</div>
+
+
+
+</body>
+</html>

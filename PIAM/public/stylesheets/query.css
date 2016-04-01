@@ -1,0 +1,49 @@
+.tools{
+    height: 30px;
+    margin: 0 170px;
+}
+
+.tools ul{
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+.tools li{
+    padding: 0;
+    margin: 0;
+    width: 100px;
+    height: 30px;
+    float: left;
+}
+
+
+.tools li:hover{
+    cursor: pointer;
+}
+
+.tools a{
+    text-align: center;
+    display: block;
+    width: inherit;
+    height: inherit;
+}
+
+.tools a:hover{
+    background-color: #a9a9a9;
+}
+
+table{
+    width: 100%;
+}
+table th{
+    text-align: left;
+
+}
+
+
+
+/*-------------------------------------progress bar-----------------------------------------------------------------*/
+.progressbar{
+    height: 15px;
+}

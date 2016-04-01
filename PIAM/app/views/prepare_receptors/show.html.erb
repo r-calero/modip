@@ -1,0 +1,82 @@
+<div class="row-fluid">
+	<div class="row-fluid">
+	  <div class="span6">
+		<div class="span3">
+			<label> Target Name:</label>
+        </div>
+        <div class="span6">
+           <p class="text-info"><%= @prepare_receptor.target.name %></p>
+        </div>      
+	  </div>
+	  <div class="span6">
+		<div class="span4">
+			<label> Receptor Type:</label>
+        </div>
+        <div class="span6">
+           <p class="text-info"><%= @prepare_receptor.receptor_type.name %></p>
+        </div>      
+	  </div>
+	</div>
+	<div class="row-fluid">
+		<table class="definition table">
+			<thead>
+				<th>Coordinate Params</th>
+				<th>X</th>
+				<th>Y</th>
+				<th>Z</th>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Center Grid</td>
+					<td><%= @prepare_receptor.center_x %></td>
+					<td><%= @prepare_receptor.center_y %></td>
+					<td><%= @prepare_receptor.center_z %></td>
+				</tr>
+				<tr>
+					<td>Size Grid</td>
+					<td><%= @prepare_receptor.size_x %></td>
+					<td><%= @prepare_receptor.size_y %></td>
+					<td><%= @prepare_receptor.size_z %></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class="row-fluid">
+		<div class="span4">
+		  <div class="span5">
+			<label class="text-left">Energy Range:</label>
+		  </div>
+		  <div class="span6">
+			<strong><%= @prepare_receptor.energy_range %></strong>
+		  </div>
+		</div>
+		<div class="span4">
+		  <div class="span6">
+			<label class="text-left">Conformer Number:</label>
+		  </div>
+		  <div class="span6">
+			<strong><%= @prepare_receptor.number_of_conformer ? @prepare_receptor.number_of_conformer : "default = 9" %></strong>
+		  </div>
+		</div>
+		<div class="span4">
+		  <div class="span5">
+			<label class="text-left">CPU Number:</label>
+		  </div>
+		  <div class="span6">
+			<strong><%= @prepare_receptor.cpu_number ? @prepare_receptor.cpu_number : "all cpu available" %></strong>
+		  </div>
+		</div>
+	</div>
+	<div class="row-fluid">
+		<div class="span2">
+			<strong>Comment:</strong>
+		</div>
+	</div>
+	<div class="row-fluid">
+		<div class="span10">
+			<%= text_area_tag 'comment', @prepare_receptor.comment, :disabled => true, :rows => 5, :style => {:width => ":100%;"} %>
+		</div>
+	</div>
+	<%= link_to 'Edit', edit_target_prepare_receptor_path(@target, @prepare_receptor) %>
+	<%= delete_dialog(@target.id, target_prepare_receptor_path(@target, @prepare_receptor)) %>
+</div>

@@ -1,0 +1,57 @@
+// Place all the styles related to the users controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+
+.content-log{
+  font-family: consolas;
+  color: #ffffff;
+  background-color: #000000;
+  height: 300px;
+  overflow-y: auto;
+  border-style: solid ;
+  border-color: #aaaaaa;
+  border-width: 1px;
+}
+
+.log{
+  
+}
+
+.progress-log{
+
+
+}
+
+.filter{
+  width: 145px;
+}
+
+/*----------------------------------------------------- pagination jquery -----------------------------*/
+
+.wrapper-paging ul{
+	list-style: none
+}
+
+.paging-back, .paging-this{
+	float: left;
+	margin-right: 10px;
+}
+
+
+a.paging-disabled:link{
+  text-decoration: none;
+}
+
+/*---------------------------------------------------- spinner -----------------------------------------*/
+
+.spinner{
+  background: transparent url(progress.gif) no-repeat center center;
+}
+
+/* ------------------------------------------ compound activity --------------------*/
+
+.activity:hover{
+  cursor: pointer;
+}
+

@@ -1,0 +1,40 @@
+.query-field{
+    height: 125px;
+}
+.automatic_download{
+    height: 125px;
+
+}
+
+/*----------------- notification---------------------*/
+
+#info{
+    clear: both;
+}
+
+.message-content{
+    height: 350px;
+}
+
+.message{
+    height: inherit;
+}
+
+.info-nav li{
+    margin: 0;
+    padding: 0;
+}
+
+.info-nav li a{
+    font-size: 4px;
+}
+
+#items{
+    height: 330px;
+    overflow: auto;
+}
+.message-content div{
+    color: #f0f0f0;
+    margin: 0 0 10px 0;
+    padding: 0;
+}

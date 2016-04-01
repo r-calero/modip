@@ -1,0 +1,27 @@
+Notification about docking process:
+
+<%= @greeting %>, These are the compounds of docking results for the query: <%= @query %>
+
+POS     CID     Parasite Receptor     Bovine Receptor     Human Receptor
+			
+<% @order_hash.each do |index, compound|%>
+	<% if compound[1][@first] %>
+		<% parasite_value = compound[1][@first][0] %>
+	<% else %>
+		<% parasite_value =  "null" %>
+	<% end %>
+	<% if compound[1][@second] %>
+		<% bovine_value = compound[1][@second][0] %>
+	<% else %>
+		<% bovine_value =  "null" %>
+	<% end %>
+	<% if compound[1][@third] %>
+		<% human_value = compound[1][@third][0] %>
+	<% else %>
+		<% human_value =  "null" %>
+	<% end %>
+<%= index %>     <%= compound[0] %>     <%= parasite_value %>     <%= bovine_value %>     <%= human_value %>
+<% end %>
+
+	
+	

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html"
+      xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+<head>
+  <title>MODIP Help</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <%= stylesheet_link_tag "application", '../stylesheets/help', :media => "all" %>
+  <%= javascript_include_tag "application" %>
+  <%= csrf_meta_tags %>
+</head>
+<body data-target=".bs-docs-sidebar" data-spy="scroll">
+<div class="container">
+ <div class="row-fluid">
+       <div class="navbar navbar-fixed-top navbar-inverse">
+        <div class="navbar-inner">
+          <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </a>
+            <!-- Be sure to leave the brand out there if you want it shown -->
+            <a class="brand" href="/">MODIP</a>
+           <div class="nav-collapse collapse navbar-inverse-collapse">
+                        <div class="span3">
+                      <ul class="nav">
+                              <li><%= link_to "Home", home_path %></li>
+                                    <li class="active"><%= link_to "About", about_path %></li>
+                                <li><%= link_to "Help", help_path %></li></li>
+                                </ul>
+                        </div>
+             <div class="span3">
+            <%= form_tag search_compound_path,  :class => "navbar-search pull-right" do %>
+                <%= text_field_tag :cid, params[:cid] , :placeholder => "Find Compound by CID", :class => "search-query span12"%>
+            <% end %>
+             </div>
+             <div class="span4">
+               <div class="user-info">
+                 <% if session[:user_id]%>
+                     <p class="text-right" style="margin-top: 10px;">Welcome <strong> <%= User.find(session[:user_id]).name %> </strong>  <%= link_to 'Logout', logout_path, :method => :delete %></p>
+                 <% else %>
+                     <p class="text-right" style="margin-top: 10px;"> If you are register, please <%= link_to 'Login', login_path %> otherwise <%= link_to 'Register', new_user_path %> </p>
+                 <% end %>
+               </div>
+             </div>
+           </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      <div class="row-fluid">
+	<div style="magin-bottom: 120px"><p>&nbsp;</p></div>
+      </div>
+
+  <div class="row-fluid">
+  <!--Sidebar content-->
+  <div class="span3 bs-docs-sidebar">
+        <ul class="nav nav-list bs-docs-sidenav affix">
+          <li class="active">
+            <a href="#Start">
+              <i class="icon-chevron-right"></i>
+              <%= t('layouts.application.Description') %>
+            </a>
+          </li>
+          <li class="">
+            <a href="#Basis">
+              <i class="icon-chevron-right"></i>
+              <%= t('layouts.application.Authors') %>
+            </a>
+          </li>
+           <li class="">
+            <a href="#Downloads">
+              <i class="icon-chevron-right"></i>
+              <%= t('layouts.application.License') %>
+            </a>
+          </li>
+       <!--   <li class="">
+            <a href="#MolecularDocking">
+              <i class="icon-chevron-right"></i>
+              <%= t('layouts.application.Reference') %>
+            </a>
+          </li> -->
+          <li class="">
+            <a href="#Ranking">
+              <i class="icon-chevron-right"></i>
+              <%= t('layouts.application.Finantial_support') %>
+            </a>
+          </li>
+        </ul>
+  </div>
+  <div class="span9">
+    <section id="Start">
+      <div class="page-header">
+        <h1>Description</h1>
+      </div>
+        <p style="text-align:justify">
+	 The computer-aided drug design uses computational chemistry to discover, enhance or study drugs related to biologically active molecules. The PubChem-BioAssay database has the distinctive asset of tracking down compounds from experimental trials with different therapeutic targets. This information is valuable for further testing, however, cannot be fully consulted/downloaded in a massive simple and friendly way. To perform Virtual Screening (VS), the combination of various computational programs and molecular graphic environments is required <sup>[<a href="http://www.nature.com/nrd/journal/v9/n4/full/nrd3139.html">1</a>]</sup> . The integration of all these tools in a way that all of them are executed in a single graphic environment, could reduce the difficulty of VS protocol implementations. We developed a distributed platform (MODIP, Molecular Docking Integrated Platform) based on Linux / Apache / MySQL / Ruby / RoR / Bootstrap / Autodock Vina and NCBI Entrez Utilities and PUG SOAP web services <sup>[<a href="https://pragprog.com/book/rails32/agile-web-development-with-rails-3-2">2</a>, <a href="https://pubchem.ncbi.nlm.nih.gov/pug_soap/pug_soap_help.html">3</a>]</sup>. MODIP downloads the compounds to a local database, allowing users to manage results through a friendly and intuitive interface. It can be configured data downloads related to a specific target and incorporate them into virtual screening process and with results previously obtained, even with its homologous proteins. All results were in the range, according to the allowable energy criterion in Kcal/mol. It also provides the ability to monitor the process through email notifications or snapshots. MODIP system is a useful tool for the present and future trials for finding new prophylactic or therapeutic drugs.
+	</p>
+     
+
+      
+    </section>
+    <section id="Basis">
+      <div class="page-header">
+        <h1>Authors</h1>
+      </div>
+        <p>This docking web platform was developed as a degree thesis project of BSc in Computer Science <b>Leobel Izquierdo Alvarez</b> and supervised by MSc, BSc. Dany Naranjo Feliciano and MSc, BSc. Romel Calero Ramos.</p>
+
+        <h3>Participant Institutions</h3>
+	<ul>
+	<li><a href="http://www.censa.edu.cu/" target="blanc">Centro Nacional de Sanidad Agropecuaria (CENSA)</a></li>
+	<li><a href="http://www.finlay.sld.cu/" target="blanc">Instituto Finlay de Vacunas (IFV)</a></li>
+	<li><a href="http://www.uh.cu/" target="blanc">Universidad de La Habana</a> (<a href="http://www.matcom.uh.cu/" target="blanc">matcom</a>, <a href="http://fbio.uh.cu/cep/es/lab_biocompu.php" target="blanc">fbio</a>)</li>
+	<li><a href="http://www.biof.ufrj.br/" target="blanc">Universidad Federal do Rio de Janeiro, Institutio de Biof&iacute;sica</a>, <a href="http://lmdm.biof.ufrj.br/" target="blanc">Laborat&oacute;rio de Modelagem e Dinâmica Molecular (LMDM)</a></li>
+	<li><a href="http://www.inmetro.gov.br/" target="blanc">Instituto Nacional de Metrologia, Qualidade e Tecnologia (INMETRO)</a></li>
+	</ul>
+    
+    </section>
+    <section id="Downloads">
+      <div class="page-header">
+        <h1>License</h1>
+      </div>
+      <p>
+Copyright (C) 2015 <br> 
+BSc. Leobel Izquierdo Alvarez <br> 
+MSc. Dany Naranjo Feliciano <br> 
+MSc. Romel Calero Ramos <br>
+BSc. Lilian Hern&aacute;ndez Alvarez<br>
+Ing. Jes&uacute;s F. Bouza Figueroa <br>
+PhD. Diego Enry Barreto Gomes <br>
+PhD. Pedro A. Valiente Flores<br>
+PhD. Pedro Geraldo Pascutti <br>
+
+<p>
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+</p>
+<p>
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+</p>
+<p>
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.	
+</p>
+</p>      
+    </section>
+
+   <!-- <section id="MolecularDocking">
+      <div class="page-header">
+        <h1>Reference</h1>
+      </div>
+      <p></p>
+
+    </section> -->
+
+    <section id="Ranking">
+      <div class="page-header">
+        <h1>Finantial Support</h1>
+      </div>
+      <p>
+       International Foundation for Science (IFS), Coordenação de Aperfeiçoamento de Pessoal de Nível Superior (CAPES).
+    </p>
+
+    </section>
+  </div>
+  </div>
+  <%= render :partial => 'layouts/footer' %>
+</div>
+</body>
+</html>

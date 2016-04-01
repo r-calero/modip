@@ -1,0 +1,61 @@
+// Place all the styles related to the assays controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+.smalltext{
+  font-size: small;
+}
+
+.atom-formula{
+  left: -0.25em;
+  margin-left: -2px;
+  margin-right: -5px;
+  padding: 0;
+}
+
+.header-container{
+  border-left: solid 1px #aaaaaa;
+  border-top: solid 1px #aaaaaa;
+  border-right: solid 1px #aaaaaa;
+  border-bottom: solid 1px #aaaaaa;
+  height: 50px;
+  background-image: -moz-linear-gradient(center top , #F9F9F9, #E3E4E6);
+}
+
+.column-header{
+  font-size: small;
+  text-align: center;
+  float: left;
+  height:inherit;
+  border-right: solid 1px #aaaaaa;
+
+}
+
+.column-inner{
+  padding: 5px 20px;
+}
+
+.activity div{
+  line-height: 28px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+}
+
+.assay_compound-table
+  {
+  font-family:"Trebuchet MS", Arial, Helvetica, sans-serif;
+  width:100%;
+  border-collapse:collapse;
+}
+.assay_compound-table td, .assay_compound-table th
+  {
+  font-size: 85%;
+  border:1px solid #aaaaaa;
+  padding:3px 7px 2px 7px;
+}
+.assay_compound-table tr:nth-child(2n+2) td
+  {
+  color:#000000;
+  background-color: #FAFAFA;
+}

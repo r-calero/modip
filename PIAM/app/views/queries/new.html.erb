@@ -1,0 +1,12 @@
+<%= stylesheet_link_tag 'queries', :media => 'all' %>
+<div class="user_form">
+  <fieldset>
+    <legend class="text-center">Enter Query Details</legend>
+    <%= render(:partial => 'form', :locals => {:url => user_queries_path, :verb => :post}) %>
+  </fieldset>
+</div>
+
+<div class="text-left">
+  <%= link_to 'Back', user_queries_path %>
+</div>
+

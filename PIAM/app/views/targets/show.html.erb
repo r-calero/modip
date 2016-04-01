@@ -1,0 +1,33 @@
+<div class ="row-fluid">
+	<% if notice %>
+		<div class="alert alert-success">
+			<button class="close" data-dismiss="alert" type="button">×</button>
+			<strong>Success!</strong>
+			<p id="notice"><%= notice %></p>
+		</div>
+	<% end %>
+</div>
+<div class="row-fluid">
+	<div class="span12 info-header">
+		<h4>Target Name</h4>
+	</div>
+</div>
+<div class="row-fluid">
+	<label><em><%= @target.name %> </em></label>
+</div>
+<div class="row-fluid">
+  <div class="span12 info-header">
+    <h4>Receptors</h4>
+  </div>
+</div>
+<div class="row-fluid">
+	<%= render(:partial => "layouts/target", :object => @target, :locals => {:action => true})%>
+</div>
+<br/>
+<div class="row-fluid">
+  <%= link_to 'New Receptor', new_target_prepare_receptor_path(@target) %>
+</div>
+<br/>
+<div class="row-fluid">
+    <%= link_to 'Back', targets_path %>
+</div>

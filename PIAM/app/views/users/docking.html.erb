@@ -1,0 +1,64 @@
+<%= javascript_include_tag 'users' %>
+<%= stylesheet_link_tag 'users', :media => :all %>
+
+<div class="row-fluid">
+  <%= form_tag(start_docking_user_path) do %>
+  		 <%= hidden_field_tag :cids, ''%>
+       <%= collection_select(:target, :target_id, Target.all, :id, :name) %>
+       <div class="row-fluid">
+       <div class="row-fluid ">
+       	<ul class="nav nav-tabs" id="info-nav">
+   			 <li><a href="#compound-select">Compound Select</a></li>
+   			 <li><a href="#selected-list" id="selected">Selected List</a></li>
+        </ul>
+        </div>
+        <div id="myTabContent" class="tab-content">
+          <div class="tab-pane fade" id="compound-select">
+                <div class="row-fluid">
+                  <div class="span6">
+                    <div class="row-fluid">
+                      <label class="span5">Select all compounds</label>
+                      <input class="all" type="checkbox"/>
+                    </div>
+                  </div>
+                </div>
+      			<div class="row-fluid table-compounds">
+      				<%= render(:partial =>  "compounds", :locals => {:selection => false}) %>
+        		</div>
+        	</div>
+        	<div class="tab-pane fade" id="selected-list">
+        	<div class="row-fluid table-selection-compounds">
+        		<table class="definition table table-condensed" id="selection">
+  						<thead>
+  							<tr>
+    							<th style="width: 5%;">#</th>
+					    		<th> CID </th>
+					    		<th style="width: 5%;">#</th>
+					    		<th> CID </th>
+					    		<th style="width: 5%;">#</th>
+					    		<th> CID </th>
+					    		<th style="width: 5%;">#</th>
+					    		<th> CID </th>
+    							<th style="width: 5%;">#</th>
+    							<th> CID </th>
+				 			 </tr>
+  					</thead>
+  					<tbody>
+  						<tr></tr> 
+  					</tbody>
+					 </table>
+					 <div class="table-wrapper">
+					 		<ul class="pager">
+        				<li class="previus"><a class="paging-back">&larr; Back</a></li>
+        				<li class="next"><a class="paging-next">Next &rarr;</a></li>
+        	 		</ul>
+        	 </div>
+        	 </div>
+        	</div>
+        </div>
+        <div class="row-fluid">
+         		<%= submit_tag :start_docking ,:class => 'btn'%>
+        </div>	
+     </div> 
+  <% end %>
+</div>

@@ -1,0 +1,73 @@
+<%= stylesheet_link_tag 'users' %>
+
+<%= form_for(@user, :html => {:class => "form-horizontal"}) do |f| %>
+  <% if @user.errors.any? %>
+      <h2 class="text-center"><%= pluralize(@user.errors.count, "error") %> prohibited this user from being saved:</h2>
+      <div class="alert alert-error">
+         <button type="button" class="close" data-dismiss="alert">×</button>
+         <ul>
+         <% @user.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+         <% end %>
+         </ul>
+      </div>
+  <% end %>
+
+
+  <div style="display: block; width: 50%; margin: 20px auto 20px auto; padding: 10px 0;">
+  <div class="control-group">
+    <div class="control-label">
+        <%= f.label :name %>
+    </div>
+    <div class="controls">
+        <%= f.text_field :name, :size => 40, :placeholder => "User Name" %>
+    </div>
+  </div>
+  <div class="control-group">
+    <div class="control-label">
+        <%= f.label :password, 'Password' %>
+    </div>
+    <div class="controls">
+        <%= f.password_field :password, :size => 40, :placeholder => "Password" %>
+    </div>
+  </div>
+  <div class= "control-group">
+    <div class="control-label">
+        <%= f.label :password_confirmation, 'Confirm' %>
+    </div>
+    <div class="controls">
+        <%= f.password_field :password_confirmation, :size => 40, :placeholder => "Confirm Password" %>
+    </div>
+  </div>
+  <div class="control-group">
+    <div class="control-label">
+        <%= f.label :email, 'Email'%>
+    </div>
+    <div class="controls">
+        <%= f.email_field :email, :size => 40, :placeholder => "Email"%>
+    </div>
+  </div>
+  <div class="control-group">
+    <div class="control-label">
+        <%= f.label :first_lastname, 'Last Name 1' %>
+    </div>
+    <div class="controls">
+        <%= f.text_field :first_lastname , :size => 40, :placeholder => "Last Name"%>
+    </div>
+  </div>
+  <div class="control-group">
+    <div class="control-label">
+        <%= f.label :second_lastname, 'Last Name 2'%>
+    </div>
+    <div class="controls">
+        <%= f.text_field :second_lastname , :size => 40 , :placeholder => "Last Name"%>
+    </div>
+  </div>
+  <div class="control-group">
+    <div class="controls">
+        <%= f.submit :class => 'btn' %>
+    </div>
+  </div>
+  </div>
+
+<% end %>

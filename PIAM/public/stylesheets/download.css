@@ -1,0 +1,127 @@
+#ajax-target{
+    margin-bottom: 5px;
+}
+
+.progress-count{
+    float: left;
+    display: inline-block;
+    width: 22%;
+    margin: 0;
+}
+
+.progress-count div{
+    margin: 0 0 10px 0;
+    /*display: inline-block;*/
+    height: 15px;
+}
+
+.progress-content{
+    clear: right;
+    display: inline-block;
+    width: 72%;
+    margin: 0;
+}
+
+.progress{
+    width: 100%;
+    height: 15px;
+    margin: 0 0 10px 0;
+}
+
+.progress div{
+    width: inherit;
+    height: inherit;
+}
+
+#total-assay{
+
+}
+
+.button-content{
+    height: 40px;
+}
+
+.status-content{
+    display: inline-block;
+    float: left;
+    height: inherit;
+}
+
+.status-content span{
+    line-height: 35px;
+}
+.button-bar{
+    width: 150px;
+    height: inherit;
+    float: left;
+    margin-left: 520px;
+}
+
+.button-bar div{
+    vertical-align: middle;
+    display: inline-block;
+    margin: 0 10px;
+    float: left;
+}
+
+.button-bar a:link, a:visited{
+    text-decoration:none;
+    display:block;
+    width: 30px;
+    height: 30px;
+}
+
+.button-cancel a:link, a:visited{
+    background: url("/images/cancel-normal.png") no-repeat top left;
+    background-size: cover;
+}
+
+.button-cancel a:hover{
+    background: url("/images/cancel-hover.png") no-repeat top left;
+    background-size: cover;
+}
+
+.button-stop a:link, a:visited{
+    background: url("/images/stop-normal.png")no-repeat top left;
+    background-size: cover;
+}
+
+.button-stop a:hover{
+    background: url("/images/stop-hover.png") no-repeat top left;
+    background-size: cover;
+}
+
+.button-start a:link, a:visited{
+    background: url("/images/run-normal.png") no-repeat top left;
+    background-size: cover;
+}
+
+.button-start a:hover{
+    background: url("/images/run-hover.png") no-repeat top left;
+    background-size: cover;
+}
+
+
+/*----------------- notification---------------------*/
+
+.info-nav li{
+    margin: 0;
+    padding: 0;
+}
+
+.info-nav li a{
+    font-size: 4px;
+}
+
+.message-content div{
+    color: #f0f0f0;
+    margin: 0 0 10px 0;
+    padding: 0;
+}
+
+.link-log{
+
+}
+
+
+

@@ -1,0 +1,142 @@
+<%= javascript_include_tag 'queries', '/javascripts/jquery-ui-1.8.20.min'%>
+<%= stylesheet_link_tag 'queries', :media => 'all' %>
+
+<%= form_for(@query, :url => url, :method => verb, :html => {:class => "form-horizontal"}) do |query| %>
+
+    <% if @query.errors.any? %>
+        <h2 class="text-center"><%= pluralize(@query.errors.count, "error") %> prohibited this query from being saved:</h2>
+        <div class="alert alert-error">
+          <button type="button" class="close" data-dismiss="alert">×</button>
+          <ul>
+            <% @query.errors.full_messages.each do |msg| %>
+                <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+    <% end %>
+
+    <%= hidden_field :query, :user_id %>
+    <div class="row-fluid">
+      <div class="control-group">
+        <div class="control-label">
+          <%= query.label :query %>
+        </div>
+        <div class="controls">
+          <%= query.text_area :query, :rows => 3, :class => "span11"%>
+        </div>
+      </div>
+
+    </div>
+    <div class="row-fluid">
+      <div class="control-group">
+        <div class="span11 controls">
+          <%= query.submit :class => 'btn pull-right'%>
+        </div>
+    </div>
+    </div>
+    <div class="row-fluid">
+      <div class="span6">
+        <div class="control-group">
+        <div class="control-label">
+          <%= query.label :target %>
+        </div>
+        <div class="controls">
+          <%= collection_select(:query, :target_id, Target.all, :id, :name) %>
+        </div>
+        </div>
+      </div>
+      <div class="span6">
+      <div class="control-group">
+        <div class="control-label">
+          <%= query.label :outcome_assay_filter %>
+        </div>
+        <div class="controls">
+          <%= collection_select(:query, :outcome_assay_filter, QueriesController::ASSAY_OUTCOME_FILTERS, :to_s, :to_s) %>
+        </div>
+      </div>
+      </div>
+    </div>
+    <div class="row-fluid">
+      <div class="span6">
+        <div class="control-group">
+          <div class="control-label">
+            <%= query.label :min_date %>
+          </div>
+          <div class="controls">
+            <%= query.text_field :min_date, {:class => "date", :size => 10, :placeholder => "YYYY/MM/DD", :value => nil}%>
+          </div>
+        </div>
+      </div>
+      <div class="span6">
+        <div class="control-group">
+          <div class="control-label">
+            <%= query.label :max_date %>
+          </div>
+          <div class="controls">
+            <%= query.text_field :max_date, {:class => "date", :size => 10, :placeholder => "YYYY/DD/MM", :value => nil}%>
+          </div>
+        </div>
+       </div>
+    </div>
+    <div class="row-fluid">
+      <div class="span6">
+      <div class="control-group">
+        <div class="control-label">
+         <%= query.label :schedule %>
+        </div>
+        <div class="controls">
+          <%= check_box_tag :schedule,'yes', @query.schedule ? true : false %>
+        </div>
+      </div>
+      </div>
+      <div class="span6">
+        <div class="control-group">
+          <div class="control-label">
+            <%= query.label :advance_search %>
+          </div>
+          <div class="controls">
+            <%= check_box_tag :advance_search %>
+          </div>
+        </div>
+      </div>
+     </div>
+    <div class="row-fluid schedule">
+        <div class="control-group">
+          <div class="control-label">
+            <%= query.label :period %>
+          </div>
+          <div class="controls">
+            <%= collection_select :cycle, :written_on, Cycle.all, :id, :name, {:selected => @query.schedule ? @query.cycle.id : Cycle.first.id} , {:class => 'input-medium' }%>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <%= query.label :starting_at , :style =>{:color => "#4169e1"}%>
+          </div>
+          <div class="controls">
+            <%= datetime_select :sch, :written_on, {:default => @query.schedule ? @query.schedule.initial_time : 1.hour.from_now, :ampm => true , :start_year => Time.now.year }, {:class => 'input-small'}%>
+          </div>
+        </div>
+    </div>
+    <div class="row-fluid params">
+    <div class="advance" >
+      <div class="advance-search" position="first" type="text">
+        <%=  collection_select(nil, nil, %w(AND OR NOT),:to_s, :to_s ,{}, {:class => "logic input-small", :style => {:visibility => ":hidden"}}) %>
+        <%=  collection_select(nil, nil, Field.where(:isHidden => false).sort, :define_type, :name, {:selected => "nothing"}, {:class => "field input-medium"}) %>
+        <div class="input_wrap">
+            <input type="text" class="text-search" />
+        </div>
+      </div>
+        <%	3.times do  |i|%>
+            <div class="advance-search" position="<%= i == 2 ? "last" : "middle"%>" type="text">
+                <%=  collection_select(nil, nil, %w(AND OR NOT),:to_s, :to_s ,{}, {:class => "logic input-small"}) %>
+                <%=  collection_select(nil, nil, Field.where(:isHidden => false).sort, :define_type, :name,{:selected => "nothing"}, {:class => 'field input-medium'}) %>
+              <div class="input_wrap">
+                <input type="text" class="text-search" />
+              </div>
+            </div>
+        <% end %>
+      </div>
+    </div>
+
+<%end%>

@@ -1,0 +1,22 @@
+var cids = $("#selected").attr('page-cids');
+$(".table-compounds").html("<%= escape_javascript(render(:partial =>  "compounds"))%>");
+if(cids != "all"){
+    cids = cids.split(":");
+	var checked = 0;
+	var checkboxs = $("#select tbody tr td input:checkbox");
+	for(var i = 0; i < checkboxs.length; i++){
+		if($.inArray(checkboxs[i].getAttribute('name'), cids) != -1){
+			checkboxs[i].setAttribute('checked', true);  	
+			checked ++;
+		}
+	}
+	if(checked == checkboxs.length){
+		$(".per-page:checkbox").attr('checked', true);
+	}
+}
+else{
+	$("#select tbody tr td input:checkbox").attr('checked', true);
+	$(".per-page:checkbox").attr('checked', true);
+}
+
+

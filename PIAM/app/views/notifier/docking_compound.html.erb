@@ -1,0 +1,45 @@
+<h2> Notification about docking process: </h2>
+<div class="row-fluid">
+	<h3><%= @greeting %>,</h3>
+	<p>These are the compounds of docking results for the query: <em> <%= @query%></em></p>
+</div>
+<div class="row-fluid">
+	<table class="definition table table-hover">
+		<thead>
+			<tr>
+				<th>POS</th>
+				<th>CID</th>
+				<th>Parasite Receptor</th>
+				<th>Bovine Receptor</th>
+				<th>Human Receptor</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<% @order_hash.each do |index, compound| %>
+				    <% if compound[1][@first] %>
+						<% parasite_value = compound[1][@first][0] %>
+					<% else %>
+						<% parasite_value =  "null" %>
+					<% end %>
+					<% if compound[1][@second] %>
+						<% bovine_value = compound[1][@second][0] %>
+					<% else %>
+						<% bovine_value =  "null" %>
+					<% end %>
+					<% if compound[1][@third] %>
+						<% human_value = compound[1][@third][0] %>
+					<% else %>
+						<% human_value =  "null" %>
+					<% end %>
+					<% comp = Compound.find_by_cid(compound[0])%>
+					<td><%= index %></td>
+					<td><%= link_to comp.cid, compound_path(comp)%></td>
+					<td><%= parasite_value%></td>
+					<td><%= bovine_value%></td>
+					<td><%= human_value%></td>
+				<% end %>
+			</tr>
+		</tbody>
+	</table>
+</div>

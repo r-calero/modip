@@ -1,0 +1,5 @@
+<%= form_for(@schedule) do |schedule| %>
+    <%= datetime_select(:schedule, :initial_time, :start_year => 2013, :end_year => 2020    ,:prompt => {:hour => 'Choose hour', :minute => 'Choose minute'} ) %>
+    <%= collection_select(:schedule, :cycle_id, @cycles, :id, :name) %>
+    <%= submit_tag action%>
+<%end%>

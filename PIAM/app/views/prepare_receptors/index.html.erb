@@ -1,0 +1,21 @@
+<h1>Listing prepare_receptors</h1>
+
+<table>
+  <tr>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+
+<% @prepare_receptors.each do |prepare_receptor| %>
+  <tr>
+    <td><%= link_to 'Show', prepare_receptor %></td>
+    <td><%= link_to 'Edit', edit_prepare_receptor_path(prepare_receptor) %></td>
+    <td><%= link_to 'Destroy', prepare_receptor, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New Prepare receptor', new_prepare_receptor_path %>

@@ -1,0 +1,18 @@
+<h1> Receptor Type List</h1>
+<div class="row-fluid">
+	<table class="definition table table-hover ">
+		<thead>
+			<th>Name</th>
+		</thead>
+		<tbody>
+			<% @receptor_types.each do |type| %>
+				<tr>
+					<td><%= type.name%></td>
+				</tr>
+			<% end %>
+		</tbody>
+	</table>
+</div>
+<div class="row-fluid">
+	<%= paginate @receptor_types %>
+</div>

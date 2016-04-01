@@ -1,0 +1,35 @@
+<div class="row-fluid">
+  <div class="span6">
+    <div class="row-fluid">
+     <label class="span5">Select all in current page</label>
+     <input class="per-page" type="checkbox"/>
+    </div>
+  </div>
+</div>
+	<table class="definition table table-condensed table-hover" id="select" total = <%= @total%> page = <%= @page_size%>>
+  	<thead>
+  		<tr>
+    		<th style="width: 5%;">#</th>
+    		<th> CID </th>
+    		<th style="width: 5%;">#</th>
+    		<th> CID </th>
+    		<th style="width: 5%;">#</th>
+    		<th> CID </th>
+    		<th style="width: 5%;">#</th>
+    		<th> CID </th>
+    		<th style="width: 5%;">#</th>
+    		<th> CID </th>
+ 			 </tr>
+  	</thead>
+  	<tbody>
+  		<% ((@compounds.size/5)+1).times do |i| %>
+  			<tr>
+  				<% @compounds[(i*5)..((i+1)*5) - 1].each do |c| %>
+      	  <td><%= check_box_tag c.cid, "yes", false,  :class => "checkbox"%></td>
+      	  <td class="<%= c.cid%>"><%= c.cid %></td>
+  			<% end %>
+  			</tr>
+  		<% end %>
+  	</tbody>
+	</table>
+<%= paginate @compounds, :remote => true%>

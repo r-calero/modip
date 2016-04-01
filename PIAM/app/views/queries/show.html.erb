@@ -1,0 +1,160 @@
+<%=javascript_include_tag  '/javascripts/show' %>
+<%= stylesheet_link_tag  'queries',:media => "all" %>
+<% if notice %>
+  <div class="alert alert-success">
+    <button type="button" class="close" data-dismiss="alert">×</button>
+    <h4>OK!</h4>
+    <p id="notice"> <%= notice %></p>
+  </div>
+<% end %>
+<div class="row-fluid">
+  <div class="row-fluid">
+    <div class="span2">
+      <label>target:</label>
+    </div>
+    <div class="span10">
+     <%= link_to @query.target.name, target_path(@query.target_id) %>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span2">
+    <label>create at:</label>
+    </div>
+    <em class="span10">
+      <%= @query.date_in_words %>
+    </em>
+  </div>
+  <div class="row-fluid">
+    <div class="span2">
+      <label>schedule:</label>
+    </div>
+    <div class="span1">
+      <span class="label label-info"><%= @query.schedule ? 'yes': 'no' %></span>
+    </div>
+    <div class="span9">
+	  <div class="span6">
+        <%= query_div_if(@query.schedule) do %>
+          <%= label_tag @query.schedule.info %>
+        <% end %>
+      </div>
+      <div class="span6">
+		<%= link_to 'Edit', edit_user_query_path, :title => 'edit query'%>
+      </div>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span2">
+      <label>outcome_assay_filter:</label>
+    </div>
+    <div class="span10">
+      <%= @query.outcome_assay_filter %>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span1">
+      <label>status:</label>
+    </div>
+    <div class="span11">
+      <span class="label label-info">
+         <%= running ? "running" : "stop" %>
+      </span>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span6">
+     <label class="span2">min date:</label>
+      <div class="span10">
+       <span class="label label-info">
+       <% if(min_date = @query.min_date) and min_date != "" %>
+         <%= min_date %>
+       <% else %>
+         unknown
+       <% end %>
+      </span>
+      </div>
+    </div>
+    <div class="span6">
+      <label class="span3 text-right">max date:</label>
+      <div class="span9">
+      <span class="label label-info">
+       <% if (max_date = @query.max_date) and max_date != "" %>
+         <%= max_date %>
+       <% else %>
+         unknown
+       <% end %>
+      </span>
+      </div>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <table class="definition table table-bordered">
+      <thead>
+      <tr>
+        <th style="width: 20%;">starting in</th>
+        <th style="text-align: center;">Query</th>
+      </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+		   <% if @query.schedule %>
+		     <% if @query.never_run %>
+				<%= distance_of_time_in_words_to_now(@query.schedule.initial_time) %>
+			 <% else %>
+			    <%= distance_of_time_in_words_to_now(@query.schedule.initial_time + @query.cycle.time)%>
+			  <% end %>
+           <% else %>
+            unknown
+           <% end %>
+          </td>
+          <td><%= @query.query %></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- notification -->
+  <div class="row-fluid">
+    <div class="span12">
+      <strong>Notifications</strong>
+    </div>
+  </div>
+  <div class="row-fluid">
+  <ul class="nav nav-tabs" id="info-nav">
+    <li><a href="#assay_inserted">assay inserted</a></li>
+    <li><a href="#assay_failed" >assay failed</a></li>
+    <li><a href="#assay_processed" >assay processed</a></li>
+    <li><a href="#compound_inserted" >compound inserted</a></li>
+    <li><a href="#compound_failed" >compound failed</a></li>
+    <li><a href="#compound_warning" >compound warning</a></li>
+    <li><a href="#compound_processed" >compound processed</a></li>
+    <li><a href="#finished"> finished info</a></li>
+  </ul>
+  <div id="info-navContent"  class="tab-content" >
+    <div class="tab-pane fade" id="assay_inserted">
+      <%= render(:partial => "items", :locals => {:items => @info[:assay_inserted], :target => :assay_inserted}) %>
+    </div>
+    <div class="tab-pane fade" id="assay_failed">
+      <%= render(:partial => "items", :locals => {:items => @info[:assay_failed], :target => :assay_failed}) %>
+    </div>
+    <div class="tab-pane fade" id="assay_processed">
+      <%= render(:partial => "items", :locals => {:items => @info[:assay_processed], :target => :assay_processed}) %>
+    </div>
+    <div class="tab-pane fade" id="compound_inserted">
+      <%= render(:partial => "items", :locals => {:items => @info[:compound_inserted], :target => :compound_inserted}) %>
+    </div>
+    <div class="tab-pane fade" id="compound_failed">
+      <%= render(:partial => "items", :locals => {:items => @info[:compound_failed], :target => :compound_failed}) %>
+    </div>
+    <div class="tab-pane fade" id="compound_warning">
+      <%= render(:partial => "items", :locals => {:items => @info[:compound_warning], :target => :compound_warning}) %>
+    </div>
+    <div class="tab-pane fade" id="compound_processed">
+      <%= render(:partial => "items", :locals => {:items => @info[:compound_processed], :target => :compound_processed}) %>
+    </div>
+    <div class="tab-pane fade" id="finished">
+		<% item = @info[:finished] ? [@info[:finished]] : [] %>
+        <%= render(:partial => "items", :locals => {:items => item, :target => :finished}) %>
+    </div>
+  </div>
+</div>
+</div>

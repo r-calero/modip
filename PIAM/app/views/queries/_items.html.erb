@@ -1,0 +1,32 @@
+<div class="row-fluid" >
+  <div class="span12 text-right">
+    <%= page_entries_info items if target != :finished %>
+  </div>
+</div>
+<div class="items">
+  <% if target == :compound_processed  or target == :compound_inserted%>
+     <% items.each do |item| %>
+          <% compound = item.compound %>
+          <p><%= item.notification.message %> with cid =  <%= link_to item.cid, compound_path(compound) %></p>
+     <% end %>
+  <% elsif target == :assay_processed or target == :assay_inserted %>
+      <% items.each do |item| %>
+          <% assay =  item.assay%>
+          <p><%= item.notification.message %> with aid =  <%= link_to item.aid, assay_path(assay) %></p>
+      <% end %>
+  <% else %>
+      <% items.each do |item| %>
+          <p><%= simple_format item.notification.message %></p>
+      <% end %>
+  <% end %>
+  <% if items.size == 0%>
+    <div class="empty">
+      <h2>no items founds</h2>
+    </div>
+  <% end %>
+</div>
+<div class="pagination pagination-centered"> 
+	<% if target != :finished %>
+		<%= paginate items, :remote => :true, :params => {:target => target} %> 
+	<% end %>
+</div>

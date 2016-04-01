@@ -1,0 +1,200 @@
+<%= stylesheet_link_tag 'compounds', :media => 'all' %>
+
+<p id="notice"><%= notice %></p>
+<div class="row-fluid">
+  <div class="span12">
+    <span style="font-size: medium; ">
+      <b>Compound Summary</b>
+      (CID <%= link_to @compound.cid, compound_path(@compound) %>)
+    </span>
+  </div>
+  <div class="span12 smalltext">
+    <b>Molecular Formula:</b>
+    <%= format_molecular_formula(@compound.molecular_formula) do |content| %>
+        <%= content %>
+    <% end %>
+    &nbsp;
+    <b>IUPAC TRADITIONAL NAME:</b>
+    <%= @compound.traditional_name %>
+  </div>
+</div>
+<div class="row-fluid">
+  <div class="span12 info-header">
+    <h4>Identification</h4>
+  </div>
+</div>
+
+<div class="row-fluid" style="margin-bottom: 10px;">
+  <div class="span12" style="border:1px solid #dddddd; padding:5px;">
+    <b>Compound Information</b>
+    <br/>
+    <br/>
+    <b><span title="PubChem Compound ID">CID </span></b>
+    <%= link_to @compound.cid, compound_path(@compound) %>
+    <br/>
+    <br/>
+    <b>Coordinate</b>
+    <br/>
+    <div style="margin-left:20px;">
+      <div style="width: 100%;" onmouseout="this.style.backgroundColor='';" onmouseover="this.style.backgroundColor = '#F0F0F0';">
+        <b>Source: </b>
+        <%= @compound.coordinate_source.source %>
+      </div>
+      <div style="width: 100%;" onmouseout="this.style.backgroundColor='';" onmouseover="this.style.backgroundColor = '#F0F0F0';">
+        <b>Unit:</b>
+        <%= @compound.coordinate_unit.unit %>
+      </div>
+    </div>
+    <br/>
+    <br/>
+    <b>Descriptors</b>
+    <br/>
+    <div style="margin-left:20px;">
+      <div style="width: 100%;" onmouseout="this.style.backgroundColor='';" onmouseover="this.style.backgroundColor = '#F0F0F0';">
+        <b>IUPAC Name: </b>
+        <%= @compound.name %>
+      </div>
+       <div style="width: 100%;" onmouseout="this.style.backgroundColor='';" onmouseover="this.style.backgroundColor = '#F0F0F0';">
+         <b>InChI:</b>
+         <%= @compound.inchi %>
+       </div>
+       <div style="width: 100%;" onmouseout="this.style.backgroundColor='';" onmouseover="this.style.backgroundColor = '#F0F0F0';">
+         <b>Canonical SMILES:</b>
+         <%= @compound.smiles %>
+       </div>
+     </div>
+  </div>
+</div>
+
+<div class="row-fluid">
+  <div class="span12 info-header">
+    <h4>Others</h4>
+  </div>
+</div>
+
+<div class="row-fluid">
+  <table class="definition table table-condensed table-hover table-bordered">
+    <thead>
+    <tr>
+      <th>Field</th>
+      <th>Value</th>
+      <th>Field</th>
+      <th>Value</th>
+      <th>Field</th>
+      <th>Value</th>
+    </tr>
+    </thead>
+    <tbody>
+       <tr>
+         <td><b>XLOGP3</b></td>
+         <td><%= ("%.5f" %@compound.molecular_weight).sub(/0+$|\.0+$/,'') %></td>
+         <td><b> TPSA </b></td>
+         <td><%= @compound.tpsa %></td>
+         <td><b> HBond Acceptor </b></td>
+         <td><%= @compound.hbond_acceptor %></td>
+       </tr>
+       <tr>
+         <td><b> Atom Number </b></td>
+         <td><%= @compound.atom_number %></td>
+         <td><b> Heavy Atom Count </b></td>
+         <td><%= @compound.heavy_atom_count %></td>
+         <td><b> Rotatable Bond </b></td>
+         <td><%= @compound.rotatable_bond %></td>
+       </tr>
+       <tr>
+         <td><b> HBond Donor </b></td>
+         <td><%= @compound.hbond_donor %></td>
+         <td><b> Component Count </b></td>
+         <td><%= @compound.component_count %></td>
+         <td><b> Tauto Count </b></td>
+         <td><%= @compound.tauto_count %></td>
+       </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="row-fluid">
+  <table>
+    <tbody>
+     <tr>
+      <td>unspecified</td>
+       <td>-|</td>
+      <td> <%= @assay_compounds.where(:outcome => :unspecified).size %></td>
+     </tr>
+     <tr><td></td><td>|</td><td></td></tr>
+    <tr>
+      <td>inconclusive</td>
+      <td>-|</td>
+      <td> <%= @assay_compounds.where(:outcome => :inconclusive).size %></td>
+    </tr>
+    <tr>
+      <td>inactive</td>
+      <td>-|</td>
+      <td> <%= @assay_compounds.where(:outcome => :inactive).size %></td>
+    </tr>
+    <tr>
+      <td>active</td>
+      <td>-|</td>
+      <td> <%= @assay_compounds.where(:outcome => :active).size %></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="row-fluid" style="color: #555555;">
+  <div class="span12" style="border:1px solid #dddddd; padding:5px;">
+   <div class="header-container">
+    <div class="column-header">
+      <div class="column-inner" style="width: 65px">
+        <span> BioAssay Source </span>
+      </div></div>
+    <div class="column-header" style="width: 220px;">
+      <div style="border-bottom: solid 1px #aaaaaa;"><span>Activity</span></div>
+     <div class="activity">
+      <div style="float: left; width: 82px; border-right: solid 1px #aaaaaa;" > <span>Outcome</span></div>
+      <div style="float: left; width: 50px; border-right: solid 1px #aaaaaa;"> <span>Type</span></div>
+      <div style="float: left; width: 80px;"><span>Value[uM]</span></div>
+     </div>
+    </div>
+    <div class="column-header" style="width: 270px; line-height: 35px;">
+      <div class="column-inner"><span> Compound Name </span></div>
+    </div>
+    <div class="column-header">
+      <div class="column-inner" style="width: 198px; line-height: 35px;"><span> BioAssay Name </span></div>
+    </div>
+  </div>
+    <div style="overflow-y: scroll; max-height: 205px;">
+    <table class="assay_compound-table">
+      <tbody>
+      <% @assay_compounds.each do |assay_compound| %>
+          <tr>
+            <td style="width: 91px;"><%= assay_compound.bio_assay_source %></td>
+            <td style="width: 68px;"><%= assay_compound.outcome %></td>
+            <% activity = assay_compound.column_descriptions.where(:active_concentration => true).first %>
+            <td style="width: 36px;"><%= activity.readout_type if activity %></td>
+            <td style="width: 72px;"><%= activity.user_readout.find_by_assay_compound_id(assay_compound.id).value if activity %></td>
+            <td style="width: 256px;"><%= @compound.name %></td>
+            <td><%= assay_compound.assay.name %>
+             <p> [AID: <%= link_to assay_compound.assay.aid, assay_path(assay_compound.assay) %>, Type: <%= assay_compound.assay.method %> ] </p>
+            </td>
+          </tr>
+      <% end %>
+      </tbody>
+    </table>
+    </div>
+    <div class="text-center">
+     <%= paginate @assay_compounds %>
+    </div>
+  </div>
+</div>
+<div class="row-fluid" style="margin: 10px 0">
+	<div class="span4">
+		<%= compound_docking(@compound.cid)%>
+	</div>
+	<div class="span4">
+	<%= link_to 'Data Download', compound_download_path, :class => 'btn btn-primary'%>
+	</div>
+</div>
+<div class="text-left">
+ <%= link_to 'Back', compounds_path %>
+</div>

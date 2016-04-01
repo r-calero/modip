@@ -1,0 +1,159 @@
+    1  sudo gedit
+    2  vmd
+    3  locate source.list
+    4  locate sources.list
+    5  sudo gedit /etc/apt/sources.list
+    6  ssh tacio@192.168.101.112
+    7  jaguatirica.biof.ufrj.br
+    8  lspci
+    9  lspci|grep VGA
+   10  top
+   11  cat /proc/cpuinfo 
+   12  top
+   13  cd ~/Documents/
+   14  ls
+   15  ssh jaguatirica.biof.ufrj.br
+   16  ls
+   17  sudo apt-cache search ruby
+   18  apt-cache search ruby
+   19  ls
+   20  cd ..
+   21  cd '/home/dany/Documents/Trabajo-2014/DM_2014/PUBCHEM_Fasciola' 
+   22  ls
+   23  pwd
+   24  cd ../
+   25  ls
+   26  cd SPB07716/
+   27  ls
+   28  ls cuba/
+   29  locate Ambertools14
+   30  ls
+   31  vi md_0_1.log
+   32  locate ej.pdb
+   33  pymol ~/Downloads/ej.pdb 
+   34  sudo apt-get install avogadro
+   35  ifconfig
+   36  SUDO SU
+   37  sudo su
+   38  cd ../../
+   39  cd ../
+   40  scp -r Trabajo-2014/ dany@192.168.101.250:
+   41  sudo su
+   42  scp -r Trabajo-2014/DM_2014/ dany@192.168.101.250:
+   43  scp -r Trabajo-2014/DM_2014/ dany@192.168.101.250:0,
+   44  locate 5308953
+   45  cd '/home/dany/Documents/Trabajo-2014/MODIP/proyecto/Server/data/Compounds/3D' 
+   46  ls *5308953*
+   47  ls
+   48  less 44279873.sdf
+   49  ls 3239042.sdf
+   50  less 3239042.sdf
+   51  ls 3239042.pdbqt
+   52  cp 3239042.sdf 4998561.sdf 5308953.sdf 54684098.sdf 5738668.sdf 886400.sdf 893083.sdf
+   53  cp 3239042.sdf 4998561.sdf 5308953.sdf 54684098.sdf 5738668.sdf 886400.sdf 893083.sdf '/home/dany/Documents/Trabajo-2014/DM_2014/PUBCHEM_Fasciola' 
+   54  ls 4998561.sdf
+   55  ls '/home/dany/Documents/Trabajo-2014/DM_2014/PUBCHEM_Fasciola' 
+   56  less '/home/dany/Documents/Trabajo-2014/DM_2014/PUBCHEM_Fasciola/54684098.sdf' 
+   57  ssh jaguatirica.biof.ufrj.br
+   58  locate MODIP | more
+   59  cd /home/dany/Documents/Trabajo-2014/MODIP
+   60  mysql -u root -p
+   61  cd gems/
+   62  ls
+   63  cd dir/to/Rubygems/[gems] gem generate index
+   64  gem generate index
+   65  locate Gemfile
+   66  sudo gem generate index
+   67  gedit '/media/dany/D856-B878/MODIP/proyecto/PIAM/Gemfile' 
+   68  pwd
+   69  sudo gem generate index
+   70  ls builder
+   71  ls
+   72  bundle install
+   73  sudo gem install -l bundler-1.1.0.gem 
+   74  sudo gem generate index
+   75  sudo gem install -l builder-3.2.2.gem 
+   76  sudo gem generate index
+   77  bundle install
+   78  cd ../proyecto/PIAM/
+   79  bundle install
+   80  locate linecache
+   81  ls ../../linecache*
+   82  sudo gem install -l ../../gems/linecache-0.46.gem 
+   83  bundle install
+   84  sudo gem generate index
+   85  sudo gem install linecache-0.46.gem
+   86  sudo gem install -l '/media/dany/D856-B878/MODIP/gems/linecache-0.46.gem' 
+   87  apt-cache search ruby1.9.3.4
+   88  apt-cache search ruby1.9.3
+   89  apt-cache search ruby
+   90  sudo gem install -l '/media/dany/D856-B878/MODIP/gems/linecache-0.46.gem' 
+   91  sudo gem install -l /home/dany/Documents/Trabajo-2014/MODIP/gems/linecache-0.46.gem
+   92  bundle install
+   93  cat -n /usr/lib/ruby/1.9.1/rubygems/custom_require.rb
+   94  sudo gem install -l '/media/dany/D856-B878/MODIP/gems/json-1.7.7.gem' 
+   95  sudo apt-get install ruby1.9.1-dev
+   96* sudo gem install -l '/home/dany/Documents/Trabajo-2014/MODIP/gems/libv8-3.16.14.7.gem'  
+   97* sudo gem install -l /media/dany/D856-B878/MODIP/gems/libv8-3.11.8.13
+   98  sudo apt-get install libv8-
+   99  sudo gem install -l libv8-3.11.8.13.gem -- --with-system-v8
+  100  sudo gem install -l '/home/dany/Documents/Trabajo-2014/MODIP/gems/libv8-3.16.14.7.gem' 
+  101  cd ../../gems/
+  102  sudo gem install -l '/home/dany/Documents/Trabajo-2014/MODIP/gems/libv8-3.16.14.7.gem' 
+  103  sudo apt-get install mysql-client libmysqlclient-dev 
+  104  sudo apt-get install mysql
+  105  sudo gem install -l mysql2-0.3.11.gem 
+  106  sudo apt-get install g++
+  107  sudo gem install -l therubyracer-0.11.3.gem 
+  108  sudo gem install -l soap4r-ruby1.9-2.0.5.gem 
+  109  sudo gem install -l download_engine-0.0.3.gem
+  110  sudo gem generate index
+  111  bundle install
+  112  cd ../proyecto/PIAM/
+  113  bundle install
+  114  rails s
+  115  less Gemfile
+  116  gedit Gemfile
+  117  bundle install
+  118  gedit Gemfile
+  119  bundle install
+  120  chmod 755 '/home/dany/Documents/Trabajo-2014/MODIP/gems/linecache-0.46.gem' 
+  121  ls '/home/dany/Documents/Trabajo-2014/MODIP/gems/linecache-0.46.gem' 
+  122  sudo gem install -l '/home/dany/Documents/Trabajo-2014/MODIP/gems/linecache-0.46.gem' 
+  123  locate mkmf.log 
+  124  less /var/lib/gems/1.9.1/gems/atomic-1.1.16/ext/mkmf.log
+  125  sudo gem uninstall rails
+  126* 
+  127  sudo gem install -l '/home/dany/Documents/Trabajo-2014/MODIP/gems/mysql-2.9.1.gem' 
+  128  bundle install
+  129  sudo gem generate index
+  130  bundle install
+  131  sudo gem install -l '/home/dany/Documents/Trabajo-2014/MODIP/gems/download_engine-0.0.3.gem' 
+  132  bundle install
+  133  cd ../../gems/
+  134  mv download_engine-0.0.1. download_engine-0.0.1.gem
+  135  mv download_engine-0.0.1.gem ../
+  136  ls download_engine-0.0.
+  137  ls download_engine-0.0.*
+  138  sudo gem generate index
+  139  bundle install
+  140  cd ../proyecto/PIAM/
+  141  bundle install
+  142  gedit Gemfile
+  143  bundle install
+  144  sudo gem install -l ../../gems/therubyracer-0.12.1.gem 
+  145  bundle install
+  146  sudo gem install -l ../../gems/mysql2-0.3.10.gem 
+  147  bundle install
+  148  sudo gem install -l ../../gems/rails-3.2.1
+  149  sudo gem install -l ../../gems/rails-3.2.1.gem 
+  150  bundle install
+  151  sudo gem install -l ../../gems/rufus-scheduler-2.0.18.gem 
+  152  bundle install
+  153  sudo gem install -l ../../gems/sass-3.1.15.gem 
+  154  bundle install
+  155  sudo gem install -l ../../gems/sass-rails-3.2.4.gem 
+  156  bundle install
+  157  sudo gem install -l ../../gems/uglifier-1.2.3.gem
+  158  bundle install
+  159  history > history_gems.txt

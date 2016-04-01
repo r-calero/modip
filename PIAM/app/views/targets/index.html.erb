@@ -1,0 +1,28 @@
+<div class="row-fluid">
+<table class="table">
+	<thead>
+		<tr>
+			<th>Target Name</th>
+			<th></th>
+			<th></th>
+			<th></th>
+		</tr>
+  </thead>
+  <tbody>
+	<% @targets.each do |target| %>
+		<tr>
+			<td> <em> <%= target.name %> </em> </td>
+			<td> <%= link_to 'New Receptor', new_target_prepare_receptor_path(target) %>  </td>
+			<td> <%= link_to 'Show', target %>  </td>
+			<td> <%= delete_dialog(target.id, target) %> </td>
+		</tr>
+	<% end %>
+  </tbody>
+</table>
+
+<br />
+<div class="row-fluid">
+	<%= link_to 'New Target', new_target_path %>
+</div>
+</div>
+     

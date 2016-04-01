@@ -1,0 +1,52 @@
+<%= javascript_include_tag 'users' %>
+<%= stylesheet_link_tag 'users' %>
+<% if running %>
+    <script type="text/javascript">
+        start_docking_service("<%= docking_notification_user_path(@user, @target.id) %>", "<%= progress %>", "<%= total %>")
+    </script>
+<% end %>
+
+<div class="row-fluid" >
+  <div class="row-fluid">
+    <div class="span2"> <label>Target Name:</label> </div>
+    <div class="span10"> <label><%= @target.name %></label> </div>
+  </div>
+
+<div class="row-fluid">
+	<%= render(:partial => "layouts/target", :object => @target, :locals => {:action => false})%>
+</div>
+<div class="row-fluid">
+  <div class="span8">
+  <div class="progress">
+    <div class="bar" id="progressbar"></div>
+  </div>
+  </div>
+  <div class="span4">
+    <span class="span7">
+     <label style="font-size: small;">Processed Compounds:</label>
+    </span>
+    <div class="span3">
+      <p>  <span class="processed"> <%= progress %>  </span>   /  <span>  <%= total %>  </span></p>
+    </div>
+  </div>
+</div>
+<div class="row-fluid">
+	
+	<%= link_to 'cancel', stop_docking_user_url(@user, @target) %>
+</div>
+
+<div class="row-fluid">
+  <div class="content-log">
+    <div class="log">
+      <div class="span12 text-center progress-log">
+      <% if running %>
+		<%= image_tag("/images/lightbox_progress.gif", :size => "100x90", :class => "progress-gif") %> 
+		<% text = "docking ..."%>
+	   <% else%>
+	    <% text = "not docking process to show"%>
+	   <% end %>
+      <span class="progress-text"> <%= text %> </span> </div>
+    </div>
+  </div>
+</div>
+</div>

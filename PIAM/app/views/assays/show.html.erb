@@ -1,0 +1,167 @@
+<%= stylesheet_link_tag 'assays', :media => 'all' %>
+<% if notice %>
+    <div class="alert alert-success" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+      <button type="button" class="close" data-dismiss="alert">×</button>
+      <h4>OK!</h4>
+      <p id="notice"> <%= notice %></p>
+    </div>
+<% end %>
+
+<div class="row-fluid">
+  <div class="row-fluid">
+    <div class="span1">
+      <b>AID:</b>
+    </div>
+    <div class="span4">
+      <%= @assay.aid %>
+    </div>
+    <div class="span4">
+		<%= button_to 'Data Download', assay_download_path, :method => :get, :class => 'btn btn-primary' %>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span1">
+      <b>Name:</b>
+    </div>
+    <div class="span11">
+      <%= @assay.name %>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span1">
+      <b>Method:</b>
+    </div>
+    <div class="span11">
+      <%= @assay.method %>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span1">
+      <b>Target:</b>
+    </div>
+    <div class="span11">
+      <%= link_to @assay.target.name, target_path(@assay.target_id) %>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span3">
+      <b>Last Date Change:</b>
+    </div>
+    <div class="span9">
+      <%= @assay.last_date_change.strftime("%B, %d of %Y") %>
+    </div>
+  </div>
+   <br/>
+  <div class="row-fluid">
+    <%= link_to "Data Table", assay_data_table_path(@assay) %>
+  </div>
+  <br/>
+  <div class="row-fluid">
+    <table class="definition table table-bordered">
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th><%= link_to 'Active', assay_data_table_path(@assay, :status => :Active) %></th>
+          <th><%= link_to 'Inactive', assay_data_table_path(@assay, :status => :Inactive) %></th>
+          <th><%= link_to 'All', assay_data_table_path(@assay)%></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CID</td>
+          <td><%= @assay.cid_active %></td>
+          <td><%= @assay.cid_inactive %></td>
+          <td><%= @assay.cid_all %></td>
+        </tr>
+        <tr>
+          <td>SID</td>
+          <td><%= @assay.sid_active %></td>
+          <td><%= @assay.sid_inactive %></td>
+          <td><%= @assay.sid_all %></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <br/>
+  <div class="row-fluid">
+    <div class="span12 info-header">
+      <h4>Description</h4>
+    </div>
+  </div>
+  <br/>
+  <div class="row-fluid">
+    <div class="span12">
+      <p><%= simple_format @assay.description %></p>
+    </div>
+  </div>
+  <br/>
+  <div class="row-fluid">
+    <div class="span2"> <b>Number of TID:</b> </div>
+    <div class="span10"> <%= @assay.number_of_tids %> </div>
+  </div>
+  <br/>
+  <div class="row-fluid">
+    <div class="span12 info-header">
+      <h4>Result Definitions</h4>
+    </div>
+  </div>
+  <br/>
+  <% active_concentration = false %>
+  <% tested_concentration = false %>
+  <div class="row-fluid">
+    <div class="span12" style="height: 220px; overflow: auto;">
+      <table class="definition table table-condensed table-hover">
+        <thead>
+          <tr>
+            <th>TID</th>
+            <th style="width: 40%;">Name</th>
+            <th style="width: 35%;">Description</th>
+            <th style="width: 10%;" >Type</th>
+            <th>Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @assay.column_descriptions.each do |description| %>
+            <tr>
+              <td><p> <%= description.tid %> </p></td>
+              <td>
+                <p><%= description.name %>
+                <% if description.active_concentration %>
+                    <% active_concentration = true %>
+                    <span style="color: #ff0000;">*</span>
+                <% elsif description.concentration %>
+                     <% tested_concentration = true %>
+                     (<%= "#{("%.5f" %description.concentration).sub(/0+$|\.0+$/,'')}"%><%= description.unit%> <span style="color: #ff0000;">**</span>)
+                <% end %>
+                  </p>
+              </td>
+              <td><p> <%= description.description %> </p></td>
+              <td><p> <%= description.readout_type %> </p></td>
+              <td><p> <%= description.unit == "percent" ? "%" : description.unit %> </p></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% if active_concentration %>
+      <hr style="width:320px; align:left; color:#DBDBDB; margin-bottom: 5px;"/>
+          <span class="small-text">
+            <font color="#FF0000">*</font>
+            Activity Concentration.
+          </span>
+  <% end %>
+  <% if tested_concentration %>
+          <span class="small-text">
+            <font color="#FF0000">**</font>
+            Tested Concentration.
+          </span>
+  <% end %>
+  <br/>
+  <br/>
+</div>
+
+<div class="text-left">
+  <%= link_to 'Assay List', assays_path %>
+</div>
+

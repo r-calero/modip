@@ -1,0 +1,6 @@
+<h1>Editing prepare_receptor</h1>
+
+<%= render(:partial => 'form', :locals => {:url => target_prepare_receptor_path(@prepare_receptor.target, @prepare_receptor), :verb => :put}) %>
+
+<%= link_to 'Show', target_prepare_receptor_path(@prepare_receptor.target, @prepare_receptor) %> |
+<%= link_to 'Back', target_path(@prepare_receptor.target) %>

@@ -1,0 +1,17 @@
+<%= form_for(@assay) do |f| %>
+  <% if @assay.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@assay.errors.count, "error") %> prohibited this assay from being saved:</h2>
+
+      <ul>
+      <% @assay.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

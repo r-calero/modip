@@ -1,0 +1,51 @@
+<%= stylesheet_link_tag  'assays', :media => 'all' %>
+  <div class="row-fluid">
+    <div class="span4">
+    <%= page_entries_info @assays %>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span12" style="text-align: right; margin-top: -20px;">
+      <%= paginate @assays %>
+    </div>
+  </div>
+<br />
+  <div class="row-fluid">
+
+<% @assays.each do |assay| %>
+  <% activity = @activity[assay.aid] %>
+  <div class="assay-container row-fluid">
+	<div class="span8">
+     <p>
+      <%= link_to assay.name, assay %>
+     </p>
+     <div>
+        <label>Protein Target:</label>
+        <%= link_to assay.target.name, target_path(assay.target_id) %>
+     </div>
+     <div>
+     <p class="assay-data">
+        Assay Data:
+        <%= link_to_if(assay.cid_active > 0, "#{assay.cid_active} Active", assay_data_table_path(assay, :status => :Active)) do
+
+
+         end %>
+        <%= link_to_if(activity, "#{activity} Activity <= 1 uM", assay_data_table_path(assay, :status => :Active, :value => 1) )do
+         end %>
+
+        <%= link_to "#{assay.cid_all} Tested", assay_data_table_path(assay) %>
+     </p>
+     </div>
+     <div class="rprtid">
+        <label>AID:</label>
+        <label><%= assay.aid %></label>
+     </div>
+    </div>
+    <div class="span4">
+		<%= button_to 'Data Download', assay_download_path(:id => assay.id), :method => :get, :class => 'btn btn-primary pull-right', :style => {"margin-right" => ":10px"}%>
+    </div>
+  </div>
+<% end %>
+  </div>
+<br />
+<div class="row-fluid paginate"><%= paginate @assays %></div>

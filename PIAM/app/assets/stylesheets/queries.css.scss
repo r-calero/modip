@@ -1,0 +1,55 @@
+// Place all the styles related to the queries controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+/*----------------------------------------------form view---------------------------------------------------*/
+
+.advance{
+  margin: 40px 0;
+}
+
+.advance-search{
+  clear: left;
+  margin: 10px 0;
+}
+.advance-search input{
+  margin-right: 0.3em;
+}
+
+.input_wrap{
+  white-space: nowrap;
+  display: inline;
+}
+
+.dateinputtext{
+  display: inline;
+}
+
+.dateinputtext label{
+  display: inline;
+  margin-right: 5px;
+}
+
+.text-search{
+  width: 60%;
+}
+.date_from, .date_to{
+  width: 130px;
+}
+
+.blurred{
+  color: #ededed;
+}
+
+/*--------------------------------------------------show view-----------------------------------------------*/
+ .items {
+   height: 300px;
+   overflow-y: auto;
+ }
+
+ .empty{
+   text-align: center;
+   width: 50%;
+   margin: 130px auto;
+   color: #ededed;
+ }
