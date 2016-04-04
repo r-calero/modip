@@ -1,11 +1,11 @@
 require 'rubygems'
-gem 'soap4r'
+gem 'soap4r-ruby1.9'
 require 'pubchem/service/default'
 require 'soap/mapping'
 
 module DefaultMappingRegistry
-  #EncodedRegistry = ::SOAP::Mapping::EncodedRegistry.new
-  # LiteralRegistry = ::SOAP::Mapping::LiteralRegistry.new
+  EncodedRegistry = ::SOAP::Mapping::EncodedRegistry.new
+  LiteralRegistry = ::SOAP::Mapping::LiteralRegistry.new
   NsPubchemNcbiNlmNihGov = "http://pubchem.ncbi.nlm.nih.gov/"
 
   EncodedRegistry.register(

@@ -3,7 +3,7 @@ require 'pubchem/SDF/SDFParser'
 
 class SDFCompound < CompoundFile
   @@element_filter = ['Na']
-  
+
   @@compound_cid = 'PUBCHEM_COMPOUND_CID'
   @@compound_coordinate_id_type = 'PUBCHEM_COMPOUND_ID_TYPE'
   @@heavy_atom_count = 'PUBCHEM_HEAVY_ATOM_COUNT'
@@ -68,129 +68,129 @@ class SDFCompound < CompoundFile
     	@coordinate_unit_id = arr[2].to_i
     end
  end
- 
+
  def filename
  	@filename
  end
- 
+
  def cid
     @sdf[@@compound_cid].gsub(/\s+$/,'') if @sdf[@@compound_cid]
- end 
- 
+ end
+
  def path
   @path
  end
- 
+
  def coordinate
  	@coordinate
  end
- 
+
  def coordinate_source_id
  	@coordinate_source_id
  end
- 
+
  def coordinate_unit_id
  	@coordinate_unit_id
  end
- 
+
  def molecular_weight
  	try_get_type(@@molecular_weight, 'float')
  end
- 
+
  def molecular_formula
  	@sdf[@@molecular_formula].gsub(/\s+$/,'') if @sdf[@@molecular_formula]
  end
- 
+
  def name
  	@sdf[@@iupac_name].gsub(/\s+$/,'') if @sdf[@@iupac_name]
  end
- 
+
  def xlogp3
-	xlogp3 = try_get_type(@@xlogp3, 'float') 
+	xlogp3 = try_get_type(@@xlogp3, 'float')
 	xlogp3 = try_get_type(@@xlogp3_aa, 'float') unless xlogp3
  end
- 
+
  def cactvs_hbond_donor
 	try_get_type(@@cactvs_hbond_donor)
- end	
- 
+ end
+
  def cactvs_hbond_acceptor
 	try_get_type(@@cactvs_hbond_acceptor)
- end	
-	
+ end
+
  def cactvs_rotatable_bond
 	try_get_type(@@cactvs_rotatable_bond)
  end
- 
+
  def openeye_iso_smiles
 	@sdf[@@openeye_iso_smiles].gsub(/\s+$/,'') if @sdf[@@openeye_iso_smiles]
  end
- 
+
  def cactvs_tpsa
 	try_get_type(@@cactvs_tpsa, 'float')
  end
- 
+
  def heavy_atom_count
  	try_get_type(@@heavy_atom_count)
  end
- 
+
  def component_count
  	try_get_type(@@component_count)
  end
- 
+
  def cactvs_tauto_count
 	try_get_type(@@cactvs_tauto_count)
  end
- 
+
  def atom_number
  	@atom_number
  end
- 
+
  def iupac_traditional_name
 	@sdf[@@iupac_traditional_name].gsub(/\s+$/,'') if @sdf[@@iupac_traditional_name]
  end
- 
+
  def inchi
 	@sdf[@@iupac_inchi].gsub(/\s+$/,'') if @sdf[@@iupac_inchi]
  end
- 
+
  def is_3d
  	return @coordinate == 2
- end 
- 
+ end
+
  def date
- 
+
  end
 
  def struct
    @sdf.struct
  end
- 
-#Begin---------------------------------------------seteo de propiedades-------------------------------------------------
+
+#Begin---------------------------------------------properties setting-------------------------------------------------
 
  def struct= (other)
  	@sdf.struct = other
  end
- 
+
  def set_coordinate(other)
  	if other.coordinate and other.coordinate_source_id and other.coordinate_unit_id
- 		@coordinate = other.coordinate 
+ 		@coordinate = other.coordinate
  		@coordinate_source_id = other.coordinate_source_id
  	  @coordinate_unit_id = other.coordinate_unit_id
  	  @sdf[@@coordinate_type] = other.inner_data[@@coordinate_type]
  	end
  end
-  
-#End---------------------------------------------seteo de propiedades---------------------------------------------------
+
+#End---------------------------------------------properties setting---------------------------------------------------
 
  def inner_data
  	@sdf
- end	
- 
+ end
+
  def to_s
  	@sdf.to_s
  end
-  
+
  private
  def try_get_type(key, type = 'int')
  	value = @sdf[key]
@@ -204,7 +204,7 @@ class SDFCompound < CompoundFile
   	end
   end
  end
- 
+
  def try_get_expr(key, expr = /[\d|.]+/)
  	value = @sdf[key]
  	if value
@@ -212,7 +212,7 @@ class SDFCompound < CompoundFile
  		return value.scan(expr)
  	end
  end
- 
+
 end
 
 

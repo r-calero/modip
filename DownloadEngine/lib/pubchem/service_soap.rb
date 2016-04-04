@@ -1,20 +1,27 @@
 require 'cgi'
-require 'pubchem/eUtils Service/defaultDriver'
+require 'entrez'
+require 'uri'
 require 'pubchem/service/defaultDriver'
 
 
 class ServiceSoap
-  
+
   attr_reader :proxy
 
-  def initialize(proxy = nil, attempt = 10)
-    @proxy = proxy
+  def initialize(proxy = "", attempt = 10)
+    @proxy = proxy.to_s
     @attempt = attempt
-    #inicializa el servicio SOAP
     @pug_soap_service = PUGSoap.new()
-    @eutils_service = EUtilsServiceSoap.new()
-    @pug_soap_service.httpproxy = @proxy
-    @eutils_service.httpproxy = @proxy
+    unless @proxy.empty?
+      begin
+        @pug_soap_service.httpproxy = @proxy
+        uri = URI.parse(@proxy)
+        Entrez.proxy(uri.host, uri.port, uri.user, uri.password)
+      rescue Exception => e
+
+      end
+    end
+
 
   end
 
@@ -24,56 +31,43 @@ class ServiceSoap
   end
 
   def proxy= (other)
-    @proxy = other
-    @pug_soap_service.httpproxy = @proxy
-    @eutils_service.httpproxy = @proxy
+    @proxy = other.to_s
+    unless @proxy.empty?
+      begin
+         @pug_soap_service.httpproxy = @proxy
+        uri = URI.parse(@proxy)
+        Entrez.proxy(uri.host, uri.port, uri.user, uri.password)
+      rescue Exception => e
+
+      end
+    end
 
   end
 
   def eSearch(db, term, opt)
      query = query_term(term)
-     index = 1
-     loop do
-       eSearchResult = @eutils_service.run_eSearch(ESearchRequest.new(db, query, opt[:webEnv], opt[:queryKey], opt[:useHistory], opt[:tool], opt[:email], opt[:field], opt[:reldate], opt[:mindate], opt[:maxdate], opt[:datetype], opt[:retStart], opt[:retMax], opt[:rettype], opt[:sort]))
-       if eSearchResult.eRROR != nil
-        raise RuntimeError.new(eSearchResult.eRROR) if index == @attempt
-       elsif eSearchResult.warningList != nil
-        raise RuntimeError.new(eSearchResult.warningList.outputMessage) if index == @attempt
-       else
-        return eSearchResult
-       end
-       sleep 1.5
-       index += 1
-     end
+     response = Entrez.ESearch(db, query, opt)
+     return response
   end
 
   def GetAssayUrl(aid, assayColumnType, assayFormat, compressType, assayOutcomeFilterType = nil, listKeyTIDs = nil, listKeySCIDs = nil)
-    index = 1
-    loop do
-      begin
-        assayKey =  @pug_soap_service.inputAssay(InputAssay.new(aid, assayColumnType, listKeyTIDs, listKeySCIDs, assayOutcomeFilterType))
-        dwlKey = @pug_soap_service.assayDownload(AssayDownload.new(assayKey.assayKey, assayFormat, compressType))
-        return GetUrl(dwlKey)
-      rescue Exception => e
-        raise e if index == @attempt
+      assayKey =  @pug_soap_service.inputAssay(InputAssay.new(aid, assayColumnType, listKeyTIDs, listKeySCIDs, assayOutcomeFilterType))
+      dwlKey = @pug_soap_service.assayDownload(AssayDownload.new(assayKey.assayKey, assayFormat, compressType))
+      status, details = download_status(dwlKey.downloadKey)
+      if status
+        return GetUrl(dwlKey.downloadKey)
+      else
+        raise Exception.new(details)
       end
-      sleep 1.5
-      index += 1
-    end
-
   end
 
   def GetSCIDUrl(listKey, compInfo, use3D = true)
-    index = 1
-    loop do
-      begin
-        dwlKey = @pug_soap_service.download(Download.new(listKey, compInfo[:format], compInfo[:compress], use3D))
-        return GetUrl(dwlKey)
-      rescue Exception => e
-        raise e if index == @attempt
-      end
-      sleep 1.5
-      index += 1
+    dwlKey = @pug_soap_service.download(Download.new(listKey, compInfo[:format], compInfo[:compress], use3D))
+    status, details = download_status(dwlKey.downloadKey)
+    if status
+      return GetUrl(dwlKey.downloadKey)
+    else
+      raise Exception.new(details)
     end
   end
 
@@ -128,7 +122,7 @@ class ServiceSoap
     end
 
   end
-  
+
   def Standardize(strKey)
     index = 1
     loop do
@@ -143,7 +137,7 @@ class ServiceSoap
     end
 
   end
-  
+
   def GetStandardizedCID(strKey)
     index = 1
     loop do
@@ -158,12 +152,11 @@ class ServiceSoap
   end
 
   private
-  def GetUrl(dwlKey)
+  def GetUrl(key)
     index = 1
     loop do
       begin
-        urlKey = @pug_soap_service.wait_complete(dwlKey.downloadKey)
-        return @pug_soap_service.getDownloadUrl(GetDownloadUrl.new(urlKey)).url
+        return @pug_soap_service.getDownloadUrl(GetDownloadUrl.new(key)).url
       rescue Exception => e
         raise e if index == @attempt
       end
@@ -178,9 +171,9 @@ class ServiceSoap
    term.gsub(/\s+/, '+').gsub('#', '%23').gsub('and', 'AND').gsub('or', 'OR').gsub('not', 'NOT')
   end
 
+  def download_status(key)
+    server_status = @pug_soap_service.wait_complete(key)
+    return [server_status == key, server_status]
+  end
+
 end
-
-
-
-
-

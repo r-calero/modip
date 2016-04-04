@@ -22,23 +22,23 @@ module SDFParser
   def self.SDFStreamParser(file)
     result =[]
     sdf = file.read.split(@@end_compound_expression)
-    sdf.each do |obj|    
+    sdf.each do |obj|
       result.push(build_sdf_object(obj))
     end
     return result
   end
-  
+
   def self.build_sdf_object(data)
     key = nil
     value = ''
     obj  = SDF.new
     data.each do |line|
-      if line =~ @@tag_expression            #esta es una linea de la cabeza de una etiqueta
-        if key != nil                     #se tienen los dos valores de una nueva etiqueta
+      if line =~ @@tag_expression            # head tag expression
+        if key != nil                        # we have the two values for the new tag
           obj[key.to_s] = value
           value =''
         end
-        key = line.match(@@word_expression)                                            
+        key = line.match(@@word_expression)
       elsif line =~ @@struct_end_expression
         obj.struct = value + line.to_s
         value =''
@@ -46,7 +46,7 @@ module SDFParser
         value += line
       end
     end
-    if key != nil                                  #fin del fichero
+    if key != nil                                  # EOF
       obj[key.to_s] = value
     else
       obj.struct = value
@@ -54,9 +54,9 @@ module SDFParser
     return obj
   end
 
-  
+
   class SDF
-   
+
    attr_accessor :struct
 
    def initialize(info = {}, struct = nil)
