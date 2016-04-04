@@ -1,5 +1,4 @@
 require_relative 'schema'
-require 'rubygems'
 require 'docking'
 require 'drb'
 require 'drb/observer'
@@ -17,22 +16,25 @@ class DockingServer
   def is_docking(key)
     @running_docking[key] ? true : false
   end
-  
+
   def get_resource(resource)
-	f = File.open(resource, 'r')
-	result = f.readlines
-	f.close()
-	result
+  f = File.open(resource, 'r')
+  result = f.readlines
+  f.close()
+  result
   end
 
-  def start_docking(key, target, compounds, background = false)
-  	@running_docking[key] = []
-  	@running_docking[key][0] = []
-  	code = Time.now.to_i.to_s
+  def start_docking(key, tid, compounds, background = false)
+    puts "starting docking ..."
+    target = Target.find(tid)
+    @running_docking[key] = []
+    @running_docking[key][0] = []
+    code = Time.now.to_i.to_s
     t = Thread.new do
       notify_docking = NotifyDocking.new(key)
-      compounds.each do |compound|
+      compounds.each do |cid|
         begin
+          compound = Compound.find_by_cid(cid)
           message, notify_docking.num_modes = make_docking(key, target, compound, code)
           notify_docking.message = message + "\n"
         rescue Exception => e
@@ -49,31 +51,31 @@ class DockingServer
     @running_docking[key][1] = t
     t.join() if background
   end
-  
+
   def stop()
-	@running_docking.keys.each do |key|
-		stop_docking(key)
-	end
+  @running_docking.keys.each do |key|
+    stop_docking(key)
   end
-  
+  end
+
   def stop_docking(key)
-  	files, thread = @running_docking[key]
-	if thread
-		thread.kill
-		@docking.wait_process_finish()
-		files.each do |file|
-			if File.exist?(file)
-				File.delete(file)
-				puts "file #{file} delete"
-			end
-		end
-		puts "stop docking"
-		files
-	else
-		puts "not docking running for key: #{key}"
-		[]
-  	end
-  	
+    files, thread = @running_docking[key]
+  if thread
+    thread.kill
+    @docking.wait_process_finish()
+    files.each do |file|
+      if File.exist?(file)
+        File.delete(file)
+        puts "file #{file} delete"
+      end
+    end
+    puts "stop docking"
+    files
+  else
+    puts "not docking running for key: #{key}"
+    []
+    end
+
   end
 
   def make_docking(key, target, compound, code)
@@ -83,7 +85,7 @@ class DockingServer
       sdf_dir = compound.path
       target.prepare_receptors.each do |receptor|
         message += receptor.receptor_type.name + "\n"
-        params = {:center_x => receptor.center_x, :center_y => receptor.center_y, :center_z =>   	receptor.center_z, :size_x => receptor.size_x, :size_y => receptor.size_y, :size_z => receptor.size_z,
+        params = {:center_x => receptor.center_x, :center_y => receptor.center_y, :center_z =>    receptor.center_z, :size_x => receptor.size_x, :size_y => receptor.size_y, :size_z => receptor.size_z,
                   :out => "#{target.root}/output/#{get_file_name(code, target.name, receptor.receptor_type.name, compound.cid)}.#{DockingManager.format_type[:pdbqt]}"}
         params[:num_modes] = receptor.number_of_conformer if receptor.number_of_conformer
         params[:energy_range] = receptor.energy_range if receptor.energy_range
@@ -91,7 +93,6 @@ class DockingServer
         @running_docking[key][0] << params[:out]
         conformer_path, _ = auto_docking(key, receptor.receptor, sdf_dir, params, code)
         result = get_conformer_value(conformer_path)
-        #File.delete(conformer_path)
         result.each_with_index do |value, index|
           compound.receptor_compound.create(:prepare_receptor => receptor, :value => value, :path => conformer_path)
           message += "Model #{index} result:  #{value}\n"
@@ -124,9 +125,9 @@ class DockingServer
   end
 
   def delete_receptor(receptor_path)
-	Dir.glob(File.join(receptor_path, "**")).each do | entry|
-		delete_receptor(entry)
-	end
+  Dir.glob(File.join(receptor_path, "**")).each do | entry|
+    delete_receptor(entry)
+  end
     File.directory?(receptor_path) ? Dir.delete(receptor_path) : File.delete(receptor_path)
   end
 
@@ -196,14 +197,14 @@ class DockingServer
   def underscore(name)
     name.gsub(/\s+/, '_')
   end
-  
+
   def get_file_name(code, *args)
-  	result = ""
-  	args << code
-  	result = underscore(args.join(" "))
-  	result
+    result = ""
+    args << code
+    result = underscore(args.join(" "))
+    result
   end
-  
+
 end
 
 data = "data"
@@ -218,10 +219,10 @@ Signal.trap("TERM") do
                  puts "Exiting"
                 end
 
-DRb.start_service('druby://localhost:1992', docking_server)
+DRb.start_service('druby://localhost:1997', docking_server)
 puts DRb.uri
-begin               
-	DRb.thread.join
+begin
+  DRb.thread.join
 rescue Exception
-	Process.kill("TERM", Process.pid)
+  Process.kill("TERM", Process.pid)
 end
