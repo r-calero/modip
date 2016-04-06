@@ -18,7 +18,13 @@ class Assay < ActiveRecord::Base
   end
   
   def self.activity(assays)
-  	self.select('a.aid').joins("a inner join assays_compounds ac on a.id = ac.assay_id").joins("inner join user_readouts ur on ac.id = ur.assay_compound_id").joins("inner join column_descriptions cd on ur.column_description_id = cd.id").where(["ac.outcome = ? and cd.active_concentration = ? and ur.value <= ?", "Active", true, 1]).where("a.id" => assays).group(:aid).size
+  	self.select('a.aid').joins("a inner join assays_compounds ac on a.id = ac.assay_id")
+                        .joins("inner join user_readouts ur on ac.id = ur.assay_compound_id")
+                        .joins("inner join column_descriptions cd on ur.column_description_id = cd.id")
+                        .where(["ac.outcome = ? and cd.active_concentration = ? and ur.value <= ?", "Active", true, 1])
+                        .where("a.id" => assays)
+                        .group(:aid)
+                        .size
   end
   
   def activity_data_table(activity_bound, page, limit)

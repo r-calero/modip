@@ -54,14 +54,14 @@ function assay_count(event){
     var key = obj["channel"];
     sources_total_assays[key] = obj["total"];
 
-    // console.log("Total Assay = " + sources_total_assays[key]);
+    console.log("Total Assay = " + sources_total_assays[key]);
 
     sources_assays_progress[key] = 0;
     sources_compounds_progress[key] = 0;
 }
 
 function assay_process(event){
-    // console.log("assay processed");
+    console.log("assay processed");
 
     var key = get_key(event);
     sources_assays_progress[key] += 1;
@@ -73,13 +73,13 @@ function compound_count(event){
     var key = obj["channel"];
     sources_total_compounds[key] = obj["total"];
 
-    // console.log("compound count = " + " " + obj["total"]);
+    console.log("compound count = " + " " + obj["total"]);
 
     sources_compounds_progress[key] = 0;
 }
 
 function compound_process(event){
-    // console.log("processing compound !!!");
+    console.log("processing compound !!!");
 
     var key = get_key(event);
     sources_compounds_progress[key] += 1;
@@ -102,7 +102,7 @@ function finished(event){
 
 function stop(event){
 
-    // console.log("query stopped");
+    console.log("query stopped");
 
 
     var key = get_key(event);
