@@ -19,7 +19,10 @@ class DownloadEngine
   @@cid = "CID"
   @@comment = "Comment"
   @@bio_assay_source = "BioAssay_Source"
+ # @@number_of_process = `grep -c processor /proc/cpuinfo`.to_i
 
+
+#ENV["http_proxy"]
   def initialize(database_server, notify_server, assays_root, download_2d, download_3d, proxy = "")
 
 
@@ -41,14 +44,14 @@ class DownloadEngine
   end
 
   def proxy= (other)
-  @proxy = other
+	@proxy = other
     @service.proxy = @proxy
   end
 
   def download(id, query, target, filter = AssayOutcomeFilterType::EAssayOutcome_All, min_date = nil, max_date = nil)
     @running = true
     @thread = Thread.new do
-          begin
+    			begin
                 @optional_search[:mindate] = min_date
                 @optional_search[:maxdate] = max_date
                 interval = @optional_search[:retMax]
@@ -74,7 +77,7 @@ class DownloadEngine
                 end
                 notify(FinishedNotificationClass.new(id, Time.now, "download complete"))
           rescue Exception => e
-            notify(FinishedNotificationClass.new(id, Time.now, "download error, details:\n#{e.message}", "Stop"))
+          	notify(FinishedNotificationClass.new(id, Time.now, "download error, details:\n#{e.message}", "Stop"))
           end
           @running = false
     end
@@ -85,10 +88,10 @@ class DownloadEngine
     aid = aid.to_s
     result, assay_path = @database_server.checkout_assay(aid)
     table_info = nil
-    if result == 1 # the assay is being inserted by another query
+    if result == 1 #esta siendo procesado
       notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "the assay #{aid} is being processed by another process"))
       next
-    elsif result == 0  # the assay isn't in the data base
+    elsif result == 0  #el ensayo no ha sido insertado en la base de datos
       @aid = aid
       assay_description = nil
       column_description = nil
@@ -117,7 +120,7 @@ class DownloadEngine
       @database_server.insert_assay(aid, target, assay_description, column_description, table_info.path)
       leave_resource(:assay)
       notify(AssayNotificationClass.new(id, aid, "AssayInserted", "assay #{aid} was inserted"))
-    else # the assay is in the data base already
+    else #el ensayo esta en la base de datos
       table_info = TableInfo.new(assay_path)
       notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "assay #{aid} was processed"))
     end
@@ -137,18 +140,18 @@ class DownloadEngine
       begin
         cid = row[table_header[@@cid]]
         result = @database_server.checkout_compound(cid)
-        if result == 1  # the compound is being inserted by another query
+        if result == 1  #esta siendo procesado
           notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "the compound #{cid} is being processed by another process"))
           next
-        elsif result == 0 # the compound isn't in the data base
+        elsif result == 0 #el compuesto no ha sido insertado en la base de datos
           @cid = cid
           cmp = nil
-          begin # try to download in 3d
+          begin #descarga del compuesto en 3d
             insert_type = '3D'
             cmp = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info), cid)
           rescue Exception => e
             notify(CompoundNotificationClass.new(id, cid, "CompoundWarning", "error downloading compound: #{cid} in 3d, details:\n#{e.message}"))
-            begin # try to download in 2d
+            begin #descarga del compuesto en 2d
               insert_type = '2D'
               cmp = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info, false), cid)
             rescue Exception => e1
@@ -166,7 +169,7 @@ class DownloadEngine
           @database_server.insert_compound(cmp)
           leave_resource(:compound)
           notify(CompoundNotificationClass.new(id, cid, "CompoundInserted", "compound #{cid} was inserted in #{insert_type}. Locate at: #{directory}"))
-        else # the compound is in the data base already
+        else
           notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "compound #{cid} was processed"))
         end
         yield [cid, row]
@@ -193,29 +196,29 @@ class DownloadEngine
   end
 
   def stop()
-  @thread.kill if @thread and @thread.alive?
+	@thread.kill if @thread and @thread.alive?
     if is_running
       if @aid
-    unless @database_server.assay_find_by_aid(@aid)
-      Dir[File.join(@assays_root, @aid + ".*")].each do |entry|
-        File.delete(entry)
-      end
-    end
-    leave_resource(:assay)
+		unless @database_server.assay_find_by_aid(@aid)
+			Dir[File.join(@assays_root, @aid + ".*")].each do |entry|
+				File.delete(entry)
+			end
+		end
+		leave_resource(:assay)
       end
       if @cid
-    Dir[File.join(Dir.tmpdir, @cid + ".*")].each do |entry|
-      File.delete(entry)
-    end
-    unless @database_server.compound_find_by_cid(@cid)
-      Dir[File.join(@download_3d, @cid + ".*")].each do |entry|
-        File.delete(entry)
-      end
-      Dir[File.join(@download_2d, @cid + ".*")].each do |entry|
-        File.delete(entry)
-      end
-    end
-    leave_resource(:compound)
+		Dir[File.join(Dir.tmpdir, @cid + ".*")].each do |entry|
+			File.delete(entry)
+		end
+		unless @database_server.compound_find_by_cid(@cid)
+			Dir[File.join(@download_3d, @cid + ".*")].each do |entry|
+				File.delete(entry)
+			end
+			Dir[File.join(@download_2d, @cid + ".*")].each do |entry|
+				File.delete(entry)
+			end
+		end
+		leave_resource(:compound)
       end
       @running = false
     end
@@ -223,6 +226,7 @@ class DownloadEngine
 
   def get_table_info(url, filename)
     dir = File.join(@assays_root, filename + '.' + url.split('.').last)
+    #WebUtilities.FTPRequest(url, dir)
     WebUtilities.HTTPRequest(url, dir, @proxy)
     TableInfo.new(dir)
   end
@@ -230,6 +234,7 @@ class DownloadEngine
   def get_compound(url, filename)
    filename = filename + '.' + url.split('.').last
    dir = File.join(Dir.tmpdir, filename)
+   #WebUtilities.FTPRequest(url, dir)
    WebUtilities.HTTPRequest(url, dir, @proxy)
    compound = nil
    case(@comp_info[:format])

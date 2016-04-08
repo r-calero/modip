@@ -161,7 +161,7 @@ end
 #   cIDCountUnspecified - SOAP::SOAPInt
 #   cIDCountProbe - SOAP::SOAPInt
 class AssayDescriptionType
-  include DRbUndumped
+	include DRbUndumped
   attr_accessor :name
   attr_accessor :description
   attr_accessor :protocol
@@ -211,9 +211,9 @@ class AssayDescriptionType
     @cIDCountUnspecified = cIDCountUnspecified
     @cIDCountProbe = cIDCountProbe
   end
-
+  
   def assay_method #problema al llamar el atributo method (confunde con llamada a un metodo : assay_description.method (ArgumentError: wrong number of arguments (0 for 1)))
-  @method
+	@method
   end
 end
 
@@ -250,7 +250,7 @@ end
 #   testedConcentration - TestedConcentrationType
 #   activeConcentration - SOAP::SOAPBoolean
 class ColumnDescriptionType
-  include DRbUndumped
+	include DRbUndumped
   attr_accessor :heading
   attr_accessor :tID
   attr_accessor :name
@@ -270,9 +270,9 @@ class ColumnDescriptionType
     @testedConcentration = testedConcentration
     @activeConcentration = activeConcentration
   end
-
+  
   def column_type #problema, confunde con el tipo de la clase
-  @type
+	@type
   end
 end
 

@@ -18,7 +18,6 @@ class ServiceSoap
         uri = URI.parse(@proxy)
         Entrez.proxy(uri.host, uri.port, uri.user, uri.password)
       rescue Exception => e
-
       end
     end
 
@@ -27,7 +26,6 @@ class ServiceSoap
 
   def proxy
     return @proxy
-
   end
 
   def proxy= (other)
@@ -38,10 +36,8 @@ class ServiceSoap
         uri = URI.parse(@proxy)
         Entrez.proxy(uri.host, uri.port, uri.user, uri.password)
       rescue Exception => e
-
       end
     end
-
   end
 
   def eSearch(db, term, opt)

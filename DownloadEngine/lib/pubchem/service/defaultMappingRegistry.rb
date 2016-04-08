@@ -1,4 +1,5 @@
 require 'rubygems'
+#gem 'soap4r'
 gem 'soap4r-ruby1.9'
 require 'pubchem/service/default'
 require 'soap/mapping'

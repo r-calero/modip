@@ -11,7 +11,8 @@ spec = Gem::Specification.new do |s|
     s.email = "leobelizquierdo@gmail.com"
     s.has_rdoc = false
 
+
     s.add_runtime_dependency 'entrez'
-    s.required_ruby_version = '>= 1.9.3'
+    s.required_ruby_version = '>= 1.9.1'
 end
 
