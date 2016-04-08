@@ -1,0 +1,115 @@
+= Entrez
+
+**This gem is no longer maintained.**
+
+Entrez is a simple API for making HTTP requests to Entrez utilities (eutils: http://eutils.ncbi.nlm.nih.gov/).
+
+== Installation
+
+  gem install entrez
+
+or if you use Bundler:
+
+  # Gemfile
+  gem 'entrez'
+
+It requires httparty.
+
+See 'Email & Tool' section below for setup.
+
+== Usage
+
+Supported Utilities
+
+* EFetch
+* EInfo
+* ESearch
+* ESummary
+
+Not yet implemented
+
+* EPost
+* ELink
+* EGQuery
+* ESpell
+
+You can copy/paste the resulting following request URLs into a browser to see what the response would be.
+
+=== EFetch, ESummary
+
+args:
+* database
+* params hash (optional)
+
+  Entrez.EFetch('snp', id: 123, retmode: :xml)
+  #=> makes request to http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=snp&id=9268480&retmode=xml.
+  #=> returns XML document with SNP rs9268480 data.
+
+ESummary takes the same arguments.
+
+=== ESearch
+
+args:
+* database
+* search terms (hash will be converted to term[field]+AND+another_term[another_field] notation. It can also be a string literal.)
+* params hash (optional)
+
+  Entrez.ESearch('genomeprj', {WORD: 'hapmap', SEQS: 'inprogress'}, retmode: :xml)
+  #=> makes request to http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=genomeprj&term=hapmap[WORD]+AND+inprogress[SEQS]&retmode=xml.
+  #=> returns XML document with list of ids of genome projects that match the searc term criteria.
+  #=> i.e. genome projects that have 'hapmap' in the description and whose sequencing status is 'inprogress'.
+
+The response has a convenience method to retrieve the parsed ids.
+
+  response = Entrez.ESearch('genomeprj', {WORD: 'hapmap', SEQS: 'inprogress'}, retmode: :xml)
+  response.ids #=> [1, 2, ...]
+
+==== Customized Queries
+
+You can build your own customized queries if you have something more complex with ANDs and ORs.
+Use Entrez.convert_search_term_hash() to help you.
+It converts a hash into a valid Entrez search string properly joined with the operator of your choosing.
+If you pass in the OR operator, the returned search string will be wrapped in a set of parentheses.
+
+=== EInfo
+
+args:
+* database
+* params hash (optional)
+
+  Entrez.EInfo('gene', retmode: :xml)
+  #=> makes request to http://eutils.ncbi.nlm.nih.gov/entrez/eutils/einfo.fcgi?db=gene.
+  #=> returns XML document with list of searchable fields for gene database.
+
+== Email & Tool
+
+NCBI asks that you supply the tool you are using and your email.
+The Entrez gem uses 'ruby' as the tool.
+Email is obtained from an environment variable ENTREZ_EMAIL on your computer.
+I set mine in my ~/.bash_profile:
+  export ENTREZ_EMAIL='jared@redningja.com'
+
+== NCBI query limits
+
+NCBI recommends no more than 3 URL requests per second: http://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
+This gem respects this limit. It will delay the next request if the last 3 have been made within 1 second.
+The amount of delay time is no more than what is necessary to make the next request "respectful".
+
+=== Ignore query limits for testing
+
+If you use something like FakeWeb for testing, and you don't want to slow down your tests, tell Entrez to ignore the query limit:
+
+  require 'entrez/spec_helpers'
+  it 'does something that I promise will not bother NCBI' do
+    Entrez.ignore_query_limit do
+      # Anything that happens within this block will ignore the query limit.
+      # So make sure you do not actually request queries from NCBI.
+      # For example:
+      FakeWeb.allow_net_connect = false
+    end
+    # Query limits are respected again outside of the block.
+  end
+
+== Compatibility
+
+http://test.rubygems.org/gems/entrez
