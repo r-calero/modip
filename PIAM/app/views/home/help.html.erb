@@ -10,48 +10,6 @@
 </head>
 <body data-target=".bs-docs-sidebar" data-spy="scroll">
 <div class="container-fluid">
- <div class="row-fluid">
-       <div class="navbar navbar-fixed-top navbar-inverse">
-        <div class="navbar-inner">
-          <div class="container">
-            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-            </a>
-            <!-- Be sure to leave the brand out there if you want it shown -->
-            <a class="brand" href="/">MODIP</a>
-           <div class="nav-collapse collapse navbar-inverse-collapse">
-                        <div class="span3">
-                      <ul class="nav">
-                              <li><%= link_to "Home", home_path %></li>
-                                    <li><%= link_to "About", about_path %></li>
-                                <li class="active"><%= link_to "Help", help_path %></li></li>
-                                </ul>
-                        </div>
-             <div class="span3">
-            <%= form_tag search_compound_path,  :class => "navbar-search pull-right" do %>
-                <%= text_field_tag :cid, params[:cid] , :placeholder => "Find Compound by CID", :class => "search-query span12"%>
-            <% end %>
-             </div>
-             <div class="span4">
-               <div class="user-info">
-                 <% if session[:user_id]%>
-                     <p class="text-right" style="margin-top: 10px;">Welcome <strong> <%= User.find(session[:user_id]).name %> </strong>  <%= link_to 'Logout', logout_path, :method => :delete %></p>
-                 <% else %>
-                     <p class="text-right" style="margin-top: 10px;"> If you are register, please <%= link_to 'Login', login_path %> otherwise <%= link_to 'Register', new_user_path %> </p>
-                 <% end %>
-               </div>
-             </div>
-           </div>
-          </div>
-        </div>
-      </div>
-      </div>
-      <div class="row-fluid">
-	<div style="magin-bottom: 120px"><p>&nbsp;</p></div>
-      </div>
-
   <div class="row-fluid">
   <!--Sidebar content-->
   <div class="span3 bs-docs-sidebar">
@@ -108,18 +66,18 @@
         <p>The users can always accede to the resources related to the <em>assays</em>, <em>compounds</em> and <em>targets</em> storages in the system no matter what if the users is login or not. Once a compound is inserted into the system it can be quickly found by its CID using the search input located in the horizontal menu bar at top of every page (see the example below in figure 1 and 2).</p>
         <div class="row-fluid">
           <div class="fix">
-          <img src="assets/modip10.png" class="img-polaroid" alt=""/>
+          <img src="assets/MODIP10.png" class="img-polaroid" alt=""/>
           <div class="caption text-center">
-            <p><strong>Fig 1.</strong> The assays listed in the system.</p>
+            <p>Fig 1. The assays listed in the system.</p>
           </div>
         </div>
         </div>
 
          <div class="row-fluid">
           <div class="fix">
-          <img src="assets/modip11.png" class="img-polaroid" alt=""/>
+          <img src="assets/MODIP11.png" class="img-polaroid" alt=""/>
           <div class="caption text-center">
-            <p><strong>Fig 2.</strong> The compounds in the system.</p>
+            <p>Fig 2. The compounds in the system.</p>
           </div>
         </div>
         </div>
@@ -132,9 +90,9 @@
 
         <div class="row-fluid">
           <div class="fix">
-          <img src="assets/modip5.png" class="img-polaroid" alt=""/>
+          <img src="assets/MODIP5.png" class="img-polaroid" alt=""/>
           <div class="caption text-center">
-            <p><strong>Fig 3.</strong> In this form you can specify the parameters that the molecular docking will take in account such as: the pdbqt file, type of receptor, coordinate of the center grid, the size of the grid and so on.</p>
+            <p>Fig 3. In this form you can specify the parameters that the molecular docking will take in account such as: the pdbqt file, type of receptor, coordinate of the center grid, the size of the grid and so on.</p>
           </div>
         </div>
         </div>
@@ -150,9 +108,9 @@
       
       <div class="row-fluid">
           <div class="fix">
-          <img src="assets/modip7.png" class="img-polaroid" alt=""/>
+          <img src="assets/MODIP7.png" class="img-polaroid" alt=""/>
           <div class="caption text-center">
-            <p><strong>Fig 4.</strong> This is an example of a download, the details of the query are for the target cathepsin b with the specific query: cathepsin B 27 active SAR taking into account all the assays (setting the input Outcome assay filter to eAssayOutcome_All) at any date.</p>
+            <p>Fig 4. This is an example of a download, the details of the query are for the target cathepsin b with the specific query: cathepsin B 27 active SAR taking into account all the assays (setting the input Outcome assay filter to eAssayOutcome_All) at any date.</p>
           </div>
         </div>
         </div>
@@ -166,9 +124,9 @@
 
       <div class="row-fluid">
           <div class="fix">
-          <img src="assets/modip12.png" class="img-polaroid" alt=""/>
+          <img src="assets/MODIP12.png" class="img-polaroid" alt=""/>
           <div class="caption text-center">
-            <p><strong>Fig 5.</strong> This view is where you can choose which compounds include in a molecular docking process.</p>
+            <p>Fig 5. This view is where you can choose which compounds include in a molecular docking process.</p>
           </div>
         </div>
         </div>
@@ -177,9 +135,9 @@
 
         <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP13.png" class="img-polaroid" alt=""/>
+          <img src="assets/MODIP14.png" class="img-polaroid" alt=""/>
           <div class="caption text-center">
-            <p><strong>Fig 6.</strong> Here the system show the molecular docking progress in details. You can see the target and the receptors with its configurations.</p>
+            <p>Fig 6. Here the system show the molecular docking progress in details. You can see the target and the receptors with its configurations.</p>
           </div>
         </div>
         </div>
@@ -195,9 +153,9 @@
 
       <div class="row-fluid">
           <div class="fix">
-          <img src="assets/modip15.png" class="img-polaroid" alt=""/>
+          <img src="assets/MODIP15.png" class="img-polaroid" alt=""/>
           <div class="caption text-center">
-            <p><strong>Fig 7.</strong> The order list can be arrange by any of the three column corresponding to that selected for the main ranking. Also the ranking list view allow download the associate data to each compound in the molecular docking process, corresponding to each receptor. The red asterisks (<span style="color: rgb(255,0,0);">*</span>) remark the compounds selected as actives in one or differents assays.</p>
+            <p>Fig 7. The order list can be arrange by any of the three column corresponding to that selected for the main ranking. Also the ranking list view allow download the associate data to each compound in the molecular docking process, corresponding to each receptor.</p>
           </div>
         </div>
         </div>

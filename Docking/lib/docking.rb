@@ -28,19 +28,19 @@ class DockingManager
     @autodock_vina_command = "vina"
     @pids = []
     $LOAD_PATH.each do |dir|
-    	receptor_path = File.join(dir, "prepare_receptor4.py") 
-      ligand_path = File.join(dir, "prepare_ligand4.py") 
+    	receptor_path = File.join(dir, "prepare_receptor4.py")
+      ligand_path = File.join(dir, "prepare_ligand4.py")
       if File.exist?(receptor_path) or File.exist?(ligand_path)
-      	@receptor_command = "python #{receptor_path}"
-      	@ligand_command = "python #{ligand_path}"
+      	@receptor_command = "pythonsh #{receptor_path}"
+      	@ligand_command = "pythonsh #{ligand_path}"
       	break
       end
     end
-    
+
   end
 
   def babel(input, output, input_extension, output_extension)
-    pid = fork do 
+    pid = fork do
 			exec("#{@babel_command} -i#{input_extension} #{input} -o#{output_extension} #{output}")
 		  end
 	@pids << pid
@@ -53,7 +53,7 @@ class DockingManager
   end
 
   def prepare_ligand(input, output)
-    pid = fork do 
+    pid = fork do
 				exec("#{@ligand_command} -l #{input} -o #{output}")
 			end
 	@pids << pid
@@ -66,14 +66,14 @@ class DockingManager
     params.each do |key, value|
       args += "--#{key} #{value} "
     end
-    pid = fork do 
+    pid = fork do
 				exec("#{@autodock_vina_command} #{args}")
 			end
 	@pids << pid
 	Process.wait
 	@pids.delete(pid)
   end
-  
+
   def wait_process_finish()
 	@pids.each do |pid|
 		begin
@@ -81,7 +81,7 @@ class DockingManager
 		rescue
 		end
 	end
-	
+
   end
 
 end

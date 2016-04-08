@@ -3,14 +3,11 @@ require 'drb'
 require 'monitor'
 require 'date'
 require 'rubygems'
-#require 'parsedate'
-#require 'soap/XMLSchemaDatatypes'
 require 'xsd/datatypes'
 require 'soap/rpc/element'
 require 'csv'
 
 class DataBaseServer < Monitor
-  #include ParseDate
 
   @@sid = "SID"
   @@cid = "CID"
@@ -18,7 +15,7 @@ class DataBaseServer < Monitor
   @@bio_assay_source = "BioAssay_Source"
   @@score = "RankScore"
   @@outcome = "Outcome"
-	
+
   def initialize()
     @connections = {:assay => {}, :compound => {}}
     super
@@ -27,56 +24,48 @@ class DataBaseServer < Monitor
   #------------------------------------------------------- download engine -----------------------------------
 
   def open_connection()
-  	@connections.length > 0 ? @connections.keys.max + 1 : 1
+    @connections.length > 0 ? @connections.keys.max + 1 : 1
   end
 
   def remove_connection(key)
     @connections.delete(key)
   end
-	
+
   def compound_find_by_cid(cid)
-	ActiveRecord::Base.connection_pool.with_connection do
-		return Compound.find_by_cid(cid) ? true : false
-	end
+  ActiveRecord::Base.connection_pool.with_connection do
+    return Compound.find_by_cid(cid) ? true : false
   end
-  
+  end
+
   def assay_find_by_aid(aid)
-	ActiveRecord::Base.connection_pool.with_connection do
-		return Assay.find_by_aid(aid) ? true : false
-	end
+  ActiveRecord::Base.connection_pool.with_connection do
+    return Assay.find_by_aid(aid) ? true : false
   end
-  
+  end
+
   def insert_assay(aid, target_id, assay_description, column_description, table_info_path)
     ActiveRecord::Base.connection_pool.with_connection do
-		  assay = new_assay(aid, target_id, assay_description, table_info_path)
-		  column_description.each do |tid|
+      assay = new_assay(aid, target_id, assay_description, table_info_path)
+      column_description.each do |tid|
         insert_column_description(assay, tid)
-      end   
+      end
       assay.save
-      puts "save assay"
     end
   end
 
   def insert_compound(cmp)
-    puts "vamos a insertar el compuesto: #{cmp.cid}"
     ActiveRecord::Base.connection_pool.with_connection do
-      puts "creando el compuesto ...."
       compound = Compound.new()
-      puts "compuesto creado!"
       compound.cid = cmp.cid
       compound.path = cmp.path
       compound.coordinate = "3D Coordinates" if cmp.coordinate and cmp.is_3d
-      puts "obteniendo las coordenadas de id: #{cmp.coordinate_source_id} ..."
-      puts "chequeo de la tabla coordinate_sources: #{CoordinateSource.all}"
       source = CoordinateSource.find(cmp.coordinate_source_id)
-      puts "se obtuvo las coordenadas"
       if source
         compound.coordinate_source_id = source.id
       else
-      compound.coordinate_source_id = 255 # Coordinate units are unknown or unspecified
+        compound.coordinate_source_id = 255 # Coordinate units are unknown or unspecified
       end
       unit = CoordinateUnit.find(cmp.coordinate_unit_id)
-      puts "se obtuvo el unit"
       if unit
         compound.coordinate_unit_id = unit.id
       else
@@ -99,15 +88,14 @@ class DataBaseServer < Monitor
       compound.inchi = cmp.inchi if cmp.inchi
       compound.date = cmp.date if cmp.date
       compound.save
-      puts "compuesto insertado!!!!!!!!!!!!!!!!!!!!!"
     end
   end
 
   def checkout_assay(aid)
     synchronize do
       assay = nil
-		  ActiveRecord::Base.connection_pool.with_connection do
-			  assay = Assay.find_by_aid(aid)
+      ActiveRecord::Base.connection_pool.with_connection do
+        assay = Assay.find_by_aid(aid)
       end
 
         if assay
@@ -129,13 +117,10 @@ class DataBaseServer < Monitor
      end
 
       if compound
-        puts "el compuesto: #{cid} existe en la bd\n"
         2
       elsif @connections[:compound][cid]
-        puts "el compuesto: #{cid} esta siendo procesado\n"
         1
       else
-        puts "el compuesto: #{cid} se va a procesar\n"
         @connections[:compound][cid] = 'processing'
         0
       end
@@ -162,7 +147,7 @@ class DataBaseServer < Monitor
     end
   end
 
-	private
+  private
 
   #------------------------------------------------------- download engine -----------------------------------
 
@@ -206,17 +191,15 @@ class DataBaseServer < Monitor
    # end
   end
 
-	def new_assay(aid, target_id, assay_description, path)
+  def new_assay(aid, target_id, assay_description, path)
     assay = Assay.new(:target_id => target_id, :aid => aid, :path => path, :name => assay_description.name, :method => assay_description.assay_method,
-   	  						:description => get_string(assay_description.description), :number_of_tids => assay_description.numberOfTIDs,
-   		  					:sid_all => assay_description.sIDCountAll, :sid_active => assay_description.sIDCountActive,
-   			  				:sid_inactive => assay_description.sIDCountInactive, :cid_all => assay_description.cIDCountAll,
-   				  			:cid_active => assay_description.cIDCountActive, :cid_inactive => assay_description.cIDCountInactive)
+                  :description => get_string(assay_description.description), :number_of_tids => assay_description.numberOfTIDs,
+                  :sid_all => assay_description.sIDCountAll, :sid_active => assay_description.sIDCountActive,
+                  :sid_inactive => assay_description.sIDCountInactive, :cid_all => assay_description.cIDCountAll,
+                  :cid_active => assay_description.cIDCountActive, :cid_inactive => assay_description.cIDCountInactive)
 
    begin
-     #date_info = parsedate(assay_description.lastDataChange.to_s).take(3)
-     #assay.last_date_change = Date.new(*date_info)
-	 assay.last_date_change = DateTime.parse(assay_description.lastDataChange.to_s).to_date
+    assay.last_date_change = DateTime.parse(assay_description.lastDataChange.to_s).to_date
    rescue
      #ignore
    end
@@ -226,10 +209,10 @@ class DataBaseServer < Monitor
   def get_string(array_of_string)
     result = ""
     if array_of_string
-		array_of_string.join("\n")
-	else
-		result = "unknow"
-	end
+    array_of_string.join("\n")
+  else
+    result = "unknow"
+  end
     result
   end
 
@@ -242,31 +225,8 @@ Signal.trap("TERM") do
                 end
 DRb.start_service('druby://localhost:9001', database_server)
 puts DRb.uri
-begin               
-	DRb.thread.join
+begin
+  DRb.thread.join
 rescue Exception
-	Process.kill("TERM", Process.pid)
+  Process.kill("TERM", Process.pid)
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

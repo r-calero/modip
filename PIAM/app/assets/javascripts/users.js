@@ -354,7 +354,14 @@ function start_docking_service(dir, progress, total){
     source.addEventListener("CompoundProcessed", compound_process, false);
     source.addEventListener("Finished", finished, false);
     source.addEventListener("Stop", stop, false);
+
+    // to capture server message decribe that there is connected
+    source.onmessage = function (event) {
+  		console.log(event.data);
+	};
+    
     update_page(0);
+
 }
 
 
@@ -387,6 +394,4 @@ function finished(event){
     $(".progress-gif").remove();
     $(".progress-text").text(JSON.parse(event.data)["message"])
 }
-
-  
 

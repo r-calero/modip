@@ -1,5 +1,5 @@
-#source 'https://rubygems.org'
-source 'file:///home/dgomes/Documents/MODIP/gems/leobel_ok'
+source 'https://rubygems.org'
+#source 'file:///home/leobel/Installers/Ruby'
 
 gem 'rails'#, '3.2.1' #, :require => 'ruby_18'
 
@@ -17,14 +17,14 @@ group :assets do
   gem 'sass-rails',   '~> 3.2.3'
   gem 'coffee-rails', '~> 3.2.1'
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
-  gem 'execjs'   
+  gem 'execjs'
   gem 'therubyracer', '>= 0.12.1'
   gem 'uglifier', '>= 1.0.3'
 end
 
 #gem 'soap4r'
 gem 'soap4r-ruby1.9', '~> 2.0.5'
-gem 'download_engine', '0.0.3'
+gem 'download_engine'
 
 #gem 'docking'
 #gem 'sinatra'
@@ -47,6 +47,6 @@ gem 'kaminari'
 
 # To use debugger
 # gem 'ruby-debug'
- 
+
 # To Benchmarker option
 # gem 'ruby-prof'

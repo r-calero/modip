@@ -25,9 +25,9 @@ class DownloadObserver < UserObserver
           if notification.class == AssayNotificationClass
             hash[:aid] = notification.aid
             AssayNotification.create(:notification => notification_model, :aid => notification.aid, :assay_notification_type => AssayNotificationType.find_by_name(notification.event))
-          elsif notification.class == CompoundNotificationClass        
-            hash[:cid] = notification.cid     
-            compound_notification_type = CompoundNotificationType.find_by_name(notification.event) 
+          elsif notification.class == CompoundNotificationClass
+            hash[:cid] = notification.cid
+            compound_notification_type = CompoundNotificationType.find_by_name(notification.event)
             @compound_inserted << notification.cid if compound_notification_type.is_compound_inserted
             CompoundNotification.create(:notification => notification_model, :cid => notification.cid, :compound_notification_type => compound_notification_type)
           elsif notification.class == CountNotificationClass
@@ -46,7 +46,7 @@ class DownloadObserver < UserObserver
       end
     end
   end
-  
+
   def notification?
     result = @notifications.any?
     if !result and @remaining_notification > 0
@@ -72,7 +72,7 @@ class DownloadObserver < UserObserver
     end
     result
   end
-  
+
   def get_notification
    note = @notifications.delete_at(0)
    @last_id = note.id
@@ -124,34 +124,34 @@ class DownloadObserver < UserObserver
   end
 
   def stop()
-    if @listen    
-      stop_listen()     
+    if @listen
+      stop_listen()
       send_notification()
     end
-    
+
   end
-  
+
   def send_notification()
    if @compound_inserted.size > 0
-	query = Query.find(@id)
-	target = query.target
+  	query = Query.find(@id)
+  	target = query.target
   	# calculate docking ranking
   	Thread.new do
   	  docking_server = PIAM::Application::DOCKING_MANAGER
   	  ((@compound_inserted.size / 50) + 1).times do |i|
-		  cids = @compound_inserted[i * 50..((i+1)*50 - 1)]
-		  compounds = Compound.find_all_by_cid(cids)
-		  docking_server.start_background_docking(query.user.id, target, compounds)
-	  end
+  		  cids = @compound_inserted[i * 50..((i+1)*50 - 1)]
+  		  #compounds = Compound.find_all_by_cid(cids)
+  		  docking_server.start_background_docking(query.user.id, target.id, cids)
+  	  end
   	  order_hash = {}
   	  Compound.sort_by_energy_range(target, 3, 1, 2).each_with_index do |item, index|
   		  order_hash[index + 1] = item if @compound_inserted.include?(item[0])
-  	  end 
+  	  end
   	  Notifier.docking_compound(query.user.emails, order_hash, query.query, 3, 2, 1).deliver
   	end
-  	
+
    end
-   
+
   end
 
   private
