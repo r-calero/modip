@@ -2,6 +2,9 @@
 <div class="user_form">
   <fieldset>
     <legend class="text-center">Enter Query Details</legend>
+    <h4 class="text-center" style="padding-left:100px;">We strongly suggest to make the initial queries test at NCBI <a href="http://www.ncbi.nlm.nih.gov/pcassay" target="_blanc">http://www.ncbi.
+nlm.nih.gov/pcassay</a></h4>
+<hr/>
     <%= render(:partial => 'form', :locals => {:url => user_queries_path, :verb => :post}) %>
   </fieldset>
 </div>
