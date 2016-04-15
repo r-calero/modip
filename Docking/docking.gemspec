@@ -9,7 +9,7 @@ s.test_files = Dir.glob("test/*_test.rb")
 s.require_paths = ['lib', 'Utilities24']
 #s.autorequire = 'docking'
 s.author = "Leobel Izquierdo Alvarez"
-s.email = "l.izquierdo@lab.matcom.uh.cu"
+s.email = "leobelizquierdo@gmail.cu"
 s.has_rdoc = false
 s.required_ruby_version = '>= 1.8.2'
 end
