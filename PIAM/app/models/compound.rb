@@ -107,40 +107,29 @@ class Compound < ActiveRecord::Base
   end
 
   def self.compare_to(filter_one, filter_two, filter_tree, optional)
-    if filter_one[0] and filter_one[1]
-      if filter_two[0] and filter_two[1]
-        distance_one = (filter_one[0] - filter_two[0]).abs
-        distance_two = (filter_one[1] - filter_two[1]).abs
-        result = -1 * (distance_one <=> distance_two)
-        if result == 0
-          if filter_tree[0] and filter_tree[1]
-            distance_one = (filter_one[0] - filter_tree[0]).abs
-            distance_two = (filter_one[1] - filter_tree[1]).abs
-            result = -1 * (distance_one <=> distance_two)
-            return result == 0 ? optional[0] <=> optional[1] : result
-          elsif filter_tree[0]
-            return -1
-          elsif filter_tree[1]
-            return 1
-          else
-            return optional[0] <=> optional[1]
-          end
-        else
-          result
-        end
-      elsif filter_two[0]
-        return -1
-      elsif filter_two[1]
-        return 1
-      else
-        return optional[0] <=> optional[1]
+    result = compare(filter_one, filter_two)
+    if(result == 0)
+      result = compare(filter_one, filter_tree)
+      if(result == 0)
+        result = optional[0] <=> optional[1]
       end
-    elsif filter_one[0]
+    end
+    return result
+  end
+
+  private
+
+  def compare(one, two)
+    if one[0] and two[0]
+      d1 = (one[0] - two[0]).abs
+      d2 = (one[1] - two[1]).abs
+      return d1 <=> d2
+    elsif one[0]
       return -1
-    elsif filter_one[1]
+    elsif two[0]
       return 1
     else
-      optional[0] <=> optional[1]
+      return 0
     end
   end
 
