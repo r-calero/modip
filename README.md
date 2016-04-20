@@ -3,8 +3,21 @@ MODIP: Molecular Docking Integrated Platform
 
 ## Authors
    BSc. Leobel Izquierdo Alvarez;
+
    BSc. Dany Naranjo Feliciano, MSc;
+
    BSc. Romel Calero Ramos, MSc.
+
+
+## Other contributors
+   Ing. Jesús F. Bouza Figueroa
+
+   PhD. Diego Enry Barreto Gomes
+
+   PhD. Pedro A. Valiente Flores
+
+   PhD. Pedro Geraldo Pascutti
+ 
 
 ## License
    Copyright (C) 2016
