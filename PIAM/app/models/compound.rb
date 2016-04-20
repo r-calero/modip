@@ -111,7 +111,10 @@ class Compound < ActiveRecord::Base
     if(result == 0)
       result = compare(filter_one, filter_tree)
       if(result == 0)
-        result = optional[0] <=> optional[1]
+        result = filter_one[0] <=> filter_one[1]
+        if(result == 0)
+          result = optional[0] <=> optional[1]
+        end
       end
     end
     return result
@@ -121,8 +124,8 @@ class Compound < ActiveRecord::Base
 
   def compare(one, two)
     if one[0] and two[0]
-      d1 = (one[0] - two[0]).abs
-      d2 = (one[1] - two[1]).abs
+      d1 = one[0] - two[0]
+      d2 = one[1] - two[1]
       return d1 <=> d2
     elsif one[0]
       return -1
