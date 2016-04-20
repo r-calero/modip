@@ -1,5 +1,5 @@
-# Rails assets
-PIAM/app/assets/
-
 # MODIP Server data
 Server/data/
+
+#MODIP gem
+*.gem

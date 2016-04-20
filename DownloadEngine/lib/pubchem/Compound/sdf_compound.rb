@@ -197,9 +197,9 @@ class SDFCompound < CompoundFile
   if value
     value = value.gsub(/\s+$/,'')
   	case(type)
-  	  when 'int':
+  	  when 'int'
   			return value.to_i
-  		when 'float':
+  		when 'float'
   			return value.to_f
   	end
   end

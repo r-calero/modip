@@ -21,9 +21,10 @@ module WebUtilities
 	uri = URI.parse(url)
 	uri_proxy = URI.parse(proxy)
 	Net::HTTP::Proxy(uri_proxy.host, uri_proxy.port, uri_proxy.user, uri_proxy.password).start(uri.host) do |http|
-		response, data = http.get("/" + uri.path, nil)
+		#response, data = http.get("/" + uri.path, nil)
+    response = http.get("/" + uri.path)
 		File.open(dir, 'wb') do |f|
-			f.write(data)
+			f.write(response.body)
 		end
 	end
   end

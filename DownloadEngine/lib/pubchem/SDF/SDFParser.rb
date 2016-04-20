@@ -32,7 +32,7 @@ module SDFParser
     key = nil
     value = ''
     obj  = SDF.new
-    data.each do |line|
+    data.each_line do |line|
       if line =~ @@tag_expression            #esta es una linea de la cabeza de una etiqueta
         if key != nil                     #se tienen los dos valores de una nueva etiqueta
           obj[key.to_s] = value
@@ -82,7 +82,7 @@ module SDFParser
      result = @struct
      @info.each_key do |key|
        result += "> <" + key + ">\n"
-       @info[key].each do |value|
+       @info[key].each_line do |value|
          result += value
        end
      end

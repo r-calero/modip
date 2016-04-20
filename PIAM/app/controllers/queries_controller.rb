@@ -119,9 +119,9 @@ class QueriesController < ApplicationController
       result['remaining_time'] = time.values.sum
       result['channel'] = @query.id
       result['dir'] = download_notification_query_path(:id => @query.id)
-      render :text => "event: remaining_time\nretry: #{60000}\ndata: #{JSON.dump(result)}\n"
+      render :text => "event: remaining_time\nretry: #{60000}\ndata: #{JSON.dump(result)}\n\n"
     else
-      render :text => "event: stop\ndata: #{JSON.dump({:channel => params[:id].to_i})}\n"
+      render :text => "event: stop\ndata: #{JSON.dump({:channel => params[:id].to_i})}\n\n"
     end
   end
 
@@ -175,6 +175,7 @@ class QueriesController < ApplicationController
       set_see_response(request, response)
       last_event_id = request.headers['last-event-id'] ? request.headers['last-event-id'].to_i : -1
       data =  PIAM::Application::QUERY_MANAGER.get_notification(channel, last_event_id)
+      puts data
       render :text => data
     else
       render :action => 'not_support_error'

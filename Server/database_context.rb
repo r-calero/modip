@@ -25,19 +25,19 @@ class DataBaseContext
         :password => password,
         :host => host,
         :pool => 20)
-        
+
     @Target = Target
-  	@Query = Query
-  	@Assay = Assay
-  	@Compound = Compound
-  	@AssayCompound = AssayCompound
-  	@ColumnDescription = ColumnDescription
-  	@UserReadout = UserReadout
-  	@TestedConcentration = TestedConcentration
-  	@CoordinateSource = CoordinateSource
-  	@CoordinateUnit = CoordinateUnit
-  	@Cycle = Cycle
-  	@Schedule = Schedule
+    @Query = Query
+    @Assay = Assay
+    @Compound = Compound
+    @AssayCompound = AssayCompound
+    @ColumnDescription = ColumnDescription
+    @UserReadout = UserReadout
+    @TestedConcentration = TestedConcentration
+    @CoordinateSource = CoordinateSource
+    @CoordinateUnit = CoordinateUnit
+    @Cycle = Cycle
+    @Schedule = Schedule
   end
 
   def close_connection

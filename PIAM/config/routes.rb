@@ -134,7 +134,6 @@ PIAM::Application.routes.draw do
 
   controller :home do
     get 'help' => :help
-    get 'about' => :about
     get 'errors', :errors, :as => :errors
   end
   

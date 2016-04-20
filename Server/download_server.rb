@@ -26,12 +26,11 @@ class DownloadServer
     end
     DRb.start_service
     @database_server = DRbObject.new(nil, "druby://localhost:9001")
-    #@docking_server = DRbObject.new(nil, "druby://localhost:1992")
     # Create a socket, bind it to localhost:4242, and start listening.
     # Runs once in the parent; all forked children inherit the socket's
     # file descriptor.
     @acceptor = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-    @address = Socket.pack_sockaddr_in(4242, 'localhost')
+    @address = Socket.pack_sockaddr_in(4242, '0.0.0.0')
     @acceptor.bind(@address)
     @acceptor.listen(10)
 
@@ -63,7 +62,7 @@ class DownloadServer
         socket.close
       else
         puts "#{id}: #{query} :#{target} config:#{min_date}- #{max_date}- #{filter}"
-        puts "process #$$ executing download proxy: #{@download_engines[id].proxy ? @download_engines[id].proxy : 'nil'}"
+        puts "process #$$ executing download proxy: #{@download_engines[id].proxy.empty? ? 'nil' : @download_engines[id].proxy}"
         @download_engines[id].download(id, query, target, filter, min_date, max_date)
       end
       true
@@ -125,10 +124,10 @@ class DownloadServer
      elsif notification.class == CompoundNotificationClass and notification.event != "CompoundWarning"
        @process[notification.query_id][:process_compounds] += 1
      elsif notification.class == CountNotificationClass
-       if notification.event == "AssayCount" 
-		  @process[notification.query_id][:total_assays] = notification.total
-	   else
-	      @process[notification.query_id][:total_compounds] = notification.total        
+       if notification.event == "AssayCount"
+      @process[notification.query_id][:total_assays] = notification.total
+     else
+        @process[notification.query_id][:total_compounds] = notification.total
        end
      elsif notification.class == FinishedNotificationClass
        puts "finished #{notification.query_id}"
@@ -147,12 +146,12 @@ class DownloadServer
     end
 
   end
-  
+
   def data_download(path)
-	file = File.open(path, 'r')
-	result = file.readlines
-	file.close()
-	result
+  file = File.open(path, 'r')
+  result = file.readlines
+  file.close()
+  result
   end
 
   class ParamsDump
@@ -217,7 +216,7 @@ class DownloadServer
         puts "#{@params.query_id}: #{@params.query} :#{@params.target} config:#{@params.min_date}- #{@params.max_date}- #{@params.filter}"
         socket.puts $$
         socket.close
-        puts "process #$$ executing download proxy: #{download.proxy ? download.proxy : 'nil'}"
+        puts "process #$$ executing download proxy: #{download.proxy.empty? ? 'nil' : download.proxy}"
         download.download(@params.query_id, @params.query, @params.target)
       }
       exit
@@ -241,9 +240,9 @@ Dir.mkdir(assays) unless File.exist?(assays)
 Dir.mkdir(compound_2d) unless File.exist?(compound_2d)
 Dir.mkdir(compound_3d) unless File.exist?(compound_3d)
 
-proxy = ARGV[1].to_s
-proxy = nil if proxy.empty?
-download_server = DownloadServer.new(ARGV[0].to_i, proxy, assays, compound_2d, compound_3d, pids)
+process_number = ARGV[0] ? ARGV[0].to_i : 0;
+proxy = ENV["MODIP_PROXY"] ? ENV["MODIP_PROXY"] : ARGV[1].to_s
+download_server = DownloadServer.new(process_number, proxy, assays, compound_2d, compound_3d, pids)
 
 
 trap("INT") do

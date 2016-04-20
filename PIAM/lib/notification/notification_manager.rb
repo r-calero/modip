@@ -23,7 +23,6 @@ class NotificationManager
           options[:id] = notification.id
           options[:event] = notification.event
           sse.write(options, notification.message)
-          puts sse.content
         else
           sse.write(options, "nothing to show") # un comentario para mantener la comunicacion
         end

@@ -1,5 +1,6 @@
 <%= javascript_include_tag 'users' %>
 <%= stylesheet_link_tag 'users' %>
+
 <% if running %>
     <script type="text/javascript">
         start_docking_service("<%= docking_notification_user_path(@user, @target.id) %>", "<%= progress %>", "<%= total %>")
@@ -39,13 +40,14 @@
   <div class="content-log">
     <div class="log">
       <div class="span12 text-center progress-log">
-      <% if running %>
-		<%= image_tag("/images/lightbox_progress.gif", :size => "100x90", :class => "progress-gif") %> 
-		<% text = "docking ..."%>
-	   <% else%>
-	    <% text = "not docking process to show"%>
-	   <% end %>
-      <span class="progress-text"> <%= text %> </span> </div>
+       <% if running %>
+        <%= image_tag("/images/lightbox_progress.gif", :size => "100x90", :class => "progress-gif") %> 
+        <% text = "docking ..."%>
+       <% else%>
+        <% text = "not docking process to show"%>
+       <% end %>
+       <span class="progress-text"> <%= text %> </span> 
+      </div>
     </div>
   </div>
 </div>

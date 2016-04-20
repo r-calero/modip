@@ -11,8 +11,8 @@ development:
   database: censa
   pool: 20
   username: admin
-  password: m0d1p
-  socket: /var/run/mysqld/mysqld.sock
+  password: c3nsa_adm1n
+  socket: /tmp/mysql.sock
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -32,5 +32,5 @@ production:
   database: censa
   pool: 20
   username: admin
-  password: m0d1p
-  socket: /var/run/mysqld/mysqld.sock
+  password: c3nsa_adm1n
+  socket: /tmp/mysql.sock

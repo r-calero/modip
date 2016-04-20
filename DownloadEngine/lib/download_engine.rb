@@ -31,7 +31,7 @@ class DownloadEngine
     @assays_root = assays_root
     @download_2d = download_2d
     @download_3d = download_3d
-    @optional_search = {:webEnv => nil, :queryKey => nil, :useHistory => 'y', :tool => nil, :email => nil, :field => nil, :reldate => nil, :datetype => 'edat',:retStart => 0, :retMax => 50, :rettype => 'uilist', :sort => nil}
+    @optional_search = {:webEnv => nil, :queryKey => nil, :useHistory => 'y', :tool => 'ruby', :email => 'modipserver@gmail.com', :field => nil, :reldate => nil, :datetype => 'edat',:retStart => 0, :retMax => 50, :rettype => 'uilist', :sort => nil}
     @assay_info = {:assayColumnType => AssayColumnsType::EAssayColumns_Concise, :listKeyTIDs =>'', :listKeySCIDs => '', :assayFormat => AssayFormatType::EAssayFormat_CSV, :compressType =>  CompressType::ECompress_None, :getVersion => true, :getCounts => true, :getFullDataBlog => false, :formatType => FormatType::EFormat_XML }
     @comp_info = {:format => FormatType::EFormat_SDF, :compress => CompressType::ECompress_None}
     @proxy = proxy
@@ -56,11 +56,11 @@ class DownloadEngine
                 @optional_search[:maxdate] = max_date
                 interval = @optional_search[:retMax]
                 assay_result = @service.eSearch(@@pubChemDataBase, query, @optional_search)
-                total = assay_result.count.to_i
+                total = assay_result.Count
                 notify(CountNotificationClass.new(id, total, "AssayCount", "total assay #{total}"))
                 assay_process(id, target, assay_result, filter) do |aid, table_info|
-                   notify(CountNotificationClass.new(id, table_info.elements.length, "CompoundCount", "total compound #{table_info.elements.length}"))
-                   child_process(id, table_info.elements, aid, table_info.header)
+                   notify(CountNotificationClass.new(id, table_info.length, "CompoundCount", "total compound #{table_info.length}"))
+                   child_process(id, table_info, aid)
                 end
                 if total > interval
                   @optional_search[:webEnv] =  assay_result.webEnv
@@ -70,8 +70,8 @@ class DownloadEngine
                     @optional_search[:retStart] = i * @optional_search[:retMax]
                     assay_result = @service.eSearch(@@pubChemDataBase, query, @optional_search)
                     assay_process(id, target, assay_result, filter) do |aid, table_info|
-                      notify(CountNotificationClass.new(id, table_info.elements.length, "CompoundCount", "total compound"))
-                      child_process(id, table_info.elements, aid, table_info.header)
+                      notify(CountNotificationClass.new(id, table_info.length, "CompoundCount", "total compound #{table_info.length}"))
+                      child_process(id, table_info, aid)
                     end
                   end
                 end
@@ -84,11 +84,12 @@ class DownloadEngine
   end
 
   def assay_process(id, target, assay_result, assay_filter)
-   assay_result.idList.each do |aid|
+   assay_result.ids.each do |aid|
+    aid = aid.to_s
     result, assay_path = @database_server.checkout_assay(aid)
     table_info = nil
     if result == 1 #esta siendo procesado
-      notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "processed assay"))
+      notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "the assay #{aid} is being processed by another process"))
       next
     elsif result == 0  #el ensayo no ha sido insertado en la base de datos
       @aid = aid
@@ -118,37 +119,40 @@ class DownloadEngine
       end
       @database_server.insert_assay(aid, target, assay_description, column_description, table_info.path)
       leave_resource(:assay)
-      notify(AssayNotificationClass.new(id, aid, "AssayInserted", "inserted assay"))
+      notify(AssayNotificationClass.new(id, aid, "AssayInserted", "assay #{aid} was inserted"))
     else #el ensayo esta en la base de datos
       table_info = TableInfo.new(assay_path)
-      notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "processed assay"))
+      notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "assay #{aid} was processed"))
     end
     yield [aid, table_info]
    end
   end
 
-  def child_process(id,rows, aid, table_header)
-    compound_process(id, rows, table_header) do |cid, row|
+  def child_process(id, table_info, aid)
+    table_header = table_info.header
+    compound_process(id, table_info, table_header) do |cid, row|
       @database_server.checkout_assay_compound(aid, cid, row, table_header)
     end
   end
 
-  def compound_process(id, rows, table_header)
-    rows.each do |row|
+  def compound_process(id, table_info, table_header)
+    table_info.values() do |row|
       begin
         cid = row[table_header[@@cid]]
         result = @database_server.checkout_compound(cid)
         if result == 1  #esta siendo procesado
-          notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "processed compound"))
+          notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "the compound #{cid} is being processed by another process"))
           next
         elsif result == 0 #el compuesto no ha sido insertado en la base de datos
           @cid = cid
           cmp = nil
           begin #descarga del compuesto en 3d
+            insert_type = '3D'
             cmp = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info), cid)
           rescue Exception => e
             notify(CompoundNotificationClass.new(id, cid, "CompoundWarning", "error downloading compound: #{cid} in 3d, details:\n#{e.message}"))
             begin #descarga del compuesto en 2d
+              insert_type = '2D'
               cmp = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info, false), cid)
             rescue Exception => e1
               leave_resource(:compound)
@@ -164,14 +168,14 @@ class DownloadEngine
           cmp.path = directory
           @database_server.insert_compound(cmp)
           leave_resource(:compound)
-          notify(CompoundNotificationClass.new(id, cid, "CompoundInserted", "inserted compound"))
+          notify(CompoundNotificationClass.new(id, cid, "CompoundInserted", "compound #{cid} was inserted in #{insert_type}. Locate at: #{directory}"))
         else
-          notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "processed compound"))
+          notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "compound #{cid} was processed"))
         end
         yield [cid, row]
       rescue Exception => e
         leave_resource(:compound) if @cid
-        notify(CompoundNotificationClass.new(id, cid, "CompoundFailed", "unexpected error processing the compound: #{cid}, details:\n#{e.message}}"))
+        notify(CompoundNotificationClass.new(id, cid, "CompoundFailed", "unexpected error processing the compound: #{cid}, details:\n#{e.message}"))
         next
       end
     end
@@ -192,7 +196,7 @@ class DownloadEngine
   end
 
   def stop()
-	@thread.kill! if @thread and @thread.alive?
+	@thread.kill if @thread and @thread.alive?
     if is_running
       if @aid
 		unless @database_server.assay_find_by_aid(@aid)
@@ -219,7 +223,7 @@ class DownloadEngine
       @running = false
     end
   end
-  
+
   def get_table_info(url, filename)
     dir = File.join(@assays_root, filename + '.' + url.split('.').last)
     #WebUtilities.FTPRequest(url, dir)
@@ -234,7 +238,7 @@ class DownloadEngine
    WebUtilities.HTTPRequest(url, dir, @proxy)
    compound = nil
    case(@comp_info[:format])
-    when FormatType::EFormat_SDF:
+    when FormatType::EFormat_SDF
      compound = SDFCompound.new(dir, filename)
    end
    File.delete(dir)

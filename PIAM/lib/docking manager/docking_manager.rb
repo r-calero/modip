@@ -1,13 +1,13 @@
-require 'drb'
+require "drb"
 require_relative 'docking_observer'
 require_relative '../notification/notification_manager'
 
 class DockingManager < NotificationManager
-  
+
   def initialize()
-    @server = DRbObject.new(nil, "druby://localhost:1992")
+    @server = DRbObject.new(nil, "druby://localhost:1997")
     @observer = {}
-    super()
+    #super()
   end
 
   def get_notification(user_id, target_id, last_event_id)
@@ -29,46 +29,47 @@ class DockingManager < NotificationManager
   end
 
   def start_docking(user_id, target, compound_docking)
-  	DRb.start_service
+  	#DRb.start_service
     key = make_key(user_id, target.id)
     observer = DockingObserver.new(key, @server, compound_docking[:total])
     observer.start()
     @observer[key] = observer
     Thread.new do
         if compound_docking[:all]
-			pages = compound_docking[:total] / 50
-			pages.times do |page|
-				compounds = Compound.page(page).per(50)
-				@server.start_docking(key, target, compounds, true)
-			end
+    			pages = compound_docking[:total] / 50
+    			pages.times do |page|
+    				compounds = Compound.page(page).per(50)
+    				@server.start_docking(key, target.id, compounds.map{|c| c.cid}, true)
+    			end
         else
-			compound_docking[:pages].each do |page|
-				compounds = Compound._3d.order("cid+0").page(page.to_i - 1).per(50)
-				@server.start_docking(key, target, compounds, true)
-			end
-			iterations = (compound_docking[:cids].length / 50) + 1
-			iterations.times do |i|
-				compounds = Compound.find_all_by_cid(compound_docking[:cids][(i * 50)..(i+1)*50 -1])
-				@server.start_docking(key, target, compounds, true)
-			end
+    			compound_docking[:pages].each do |page|
+    				compounds = Compound._3d.order("cid+0").page(page.to_i - 1).per(50)
+    				@server.start_docking(key, target.id, compounds.map{|c| c.cid}, true)
+    			end
+    			iterations = (compound_docking[:cids].length / 50) + 1
+
+    			iterations.times do |i|
+    				#compounds = Compound.find_all_by_cid(compound_docking[:cids][(i * 50)..(i+1)*50 -1])
+    				@server.start_docking(key, target.id, compound_docking[:cids][(i * 50)..(i+1)*50 -1], true)
+    			end
 		end
     end
   end
-  
+
   def start_background_docking(user_id, target, compounds)
-	DRb.start_service
+	#DRb.start_service
 	key = make_key(user_id, target.id)
-	@server.start_docking(key, target, compounds, true)
+	@server.start_docking(key, target.id, compounds.map{|c| c.cid}, true)
   end
-  
+
   def stop_docking(user_id, target_id)
   	key = make_key(user_id, target_id)
   	observer = @observer[key]
   	observer.stop()
   	@server.stop_docking(key)
   end
-  
-  def get_resource(resource)   
+
+  def get_resource(resource)
 	@server.get_resource(resource)
   end
 
