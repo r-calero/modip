@@ -11,6 +11,6 @@ class Notifier < ActionMailer::Base
 	@order_hash = order_hash
 	@query = query
 	@first, @second, @third = first, second, third
-    mail :to => emails, :subject => 'PIAM: Compound Docking Confirmation [not reply]'
+    mail :to => emails, :subject => 'MODIP: Compound Docking Confirmation [not reply]'
   end
 end
