@@ -1,5 +1,6 @@
 # MODIP Server data
 Server/data/
+Server/tmp/
 
 #MODIP gem
 *.gem
