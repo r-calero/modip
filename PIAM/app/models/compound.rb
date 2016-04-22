@@ -122,7 +122,7 @@ class Compound < ActiveRecord::Base
 
   private
 
-  def compare(one, two)
+  def self.compare(one, two)
     if one[0] and two[0]
       d1 = one[0] - two[0]
       d2 = one[1] - two[1]
