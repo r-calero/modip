@@ -124,8 +124,8 @@ class Compound < ActiveRecord::Base
 
   def self.compare(one, two)
     if one[0] and two[0]
-      d1 = one[0] - two[0]
-      d2 = one[1] - two[1]
+      d1 = (one[0] - two[0]).round(3) #fix double-precision float-point representation
+      d2 = (one[1] - two[1]).round(3) #fix double-precision float-point representation
       return d1 <=> d2
     elsif one[0]
       return -1
