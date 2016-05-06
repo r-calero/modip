@@ -208,11 +208,11 @@ class DataBaseServer < Monitor
 
   def get_string(array_of_string)
     result = ""
-    if array_of_string
-    array_of_string.join("\n")
-  else
-    result = "unknow"
-  end
+    if array_of_string and array_of_string.is_a?(Array)
+      result = array_of_string.join("\n")
+    else
+      result = "unknow"
+    end
     result
   end
 
