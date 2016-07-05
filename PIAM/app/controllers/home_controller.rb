@@ -9,6 +9,10 @@ class HomeController < ApplicationController
   	render :layout => nil
   end
 
+  def about
+  	render :layout => nil
+  end
+
   def errors
     render
   end
