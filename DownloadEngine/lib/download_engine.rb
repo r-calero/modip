@@ -88,10 +88,10 @@ class DownloadEngine
     aid = aid.to_s
     result, assay_path = @database_server.checkout_assay(aid)
     table_info = nil
-    if result == 1 #esta siendo procesado
+    if result == 1 
       notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "the assay #{aid} is being processed by another process"))
       next
-    elsif result == 0  #el ensayo no ha sido insertado en la base de datos
+    elsif result == 0  
       @aid = aid
       assay_description = nil
       column_description = nil
