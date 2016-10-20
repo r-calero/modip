@@ -10,8 +10,8 @@ development:
   reconnect: true
   database: censa
   pool: 20
-  username: admin
-  password: c3nsa_adm1n
+  username: admindemás
+  password: c3nsa_adm1ndemás
   socket: /tmp/mysql.sock
 
 # Warning: The database defined as "test" will be erased and
@@ -31,6 +31,6 @@ production:
   reconnect: true
   database: censa
   pool: 20
-  username: admin
-  password: c3nsa_adm1n
+  username: admindemás
+  password: c3nsa_adm1ndemás
   socket: /tmp/mysql.sock
