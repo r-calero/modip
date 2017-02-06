@@ -10,6 +10,8 @@ MODIP: Molecular Docking Integrated Platform
 
 
 ## Other contributors
+   BSc. Lilian Hernández Alvarez
+
    Ing. Jesús F. Bouza Figueroa
 
    PhD. Diego Enry Barreto Gomes

@@ -120,7 +120,7 @@ class DownloadObserver < UserObserver
     @last_id = Notification.where(:query_id => @id).maximum(:id)
     @notifications = []
     @history = []
-    @compound_inserted = ["66541"]
+    @compound_inserted = [] # changed by @compound_inserted = ["66541"]
   end
 
   def stop()
