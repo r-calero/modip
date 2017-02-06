@@ -1,5 +1,5 @@
-CREATE DATABASE  IF NOT EXISTS `censa` /*!40100 DEFAULT CHARACTER SET latin1 */;
-USE `censa`;
+CREATE DATABASE  IF NOT EXISTS `modip` /*!40100 DEFAULT CHARACTER SET latin1 */;
+USE `modip`;
 -- MySQL dump 10.13  Distrib 5.5.40, for debian-linux-gnu (x86_64)
 --
 -- Host: 127.0.0.1    Database: censa
@@ -189,18 +189,18 @@ DROP TABLE IF EXISTS `compounds`;
 CREATE TABLE `compounds` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `cid` varchar(50) NOT NULL,
-  `path` varchar(256) DEFAULT 'unknow',
+  `path` varchar(512) DEFAULT 'unknow',
   `coordinate` varchar(15) DEFAULT '2D Coordinates',
   `coordinate_source_id` int(11) NOT NULL,
   `coordinate_unit_id` int(11) NOT NULL,
   `molecular_weight` float DEFAULT '-1',
-  `molecular_formula` varchar(50) DEFAULT 'unknow',
-  `name` varchar(256) DEFAULT 'unknow',
+  `molecular_formula` varchar(512) DEFAULT 'unknow',
+  `name` varchar(512) DEFAULT 'unknow',
   `xlogp3` float DEFAULT '-1',
   `hbond_donor` int(11) DEFAULT '0',
   `hbond_acceptor` int(11) DEFAULT '0',
   `rotatable_bond` int(11) DEFAULT '0',
-  `smiles` varchar(50) DEFAULT 'unknow',
+  `smiles` varchar(512) DEFAULT 'unknow',
   `tpsa` int(11) DEFAULT '0',
   `heavy_atom_count` int(11) DEFAULT '0',
   `component_count` int(11) DEFAULT '0',

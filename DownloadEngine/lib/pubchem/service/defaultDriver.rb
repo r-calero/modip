@@ -3,7 +3,7 @@ require 'pubchem/service/defaultMappingRegistry'
 require 'soap/rpc/driver'
 
 class PUGSoap < ::SOAP::RPC::Driver
-  DefaultEndpointUrl = "http://pubchem.ncbi.nlm.nih.gov/pug_soap/pug_soap.cgi"
+  DefaultEndpointUrl = "https://pubchem.ncbi.nlm.nih.gov/pug_soap/pug_soap.cgi"
 
   Methods = [
     [ "http://pubchem.ncbi.nlm.nih.gov/AssayDownload",

@@ -1,3 +1,3 @@
 module Entrez
-  VERSION = "0.5.8.2"
+  VERSION = "0.5.8.3"
 end

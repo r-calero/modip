@@ -6,7 +6,7 @@ require 'entrez/query_limit'
 module Entrez
 
   include HTTParty
-  base_uri 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils'
+  base_uri 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils'
   default_params tool: 'ruby', email: (ENV['ENTREZ_EMAIL'] || raise('please set ENTREZ_EMAIL environment variable'))
   query_string_normalizer QueryStringNormalizer
 

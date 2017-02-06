@@ -2,6 +2,7 @@ require 'pubchem/service_soap'
 require 'pubchem/Assay/table_info'
 require 'pubchem/Compound/sdf_compound'
 require 'pubchem/Substance/sdf_substance'
+require 'notification/notification_class'
 require 'notification/assay_notification_class'
 require 'notification/compound_notification_class'
 require 'notification/count_notification_class'
@@ -11,9 +12,13 @@ require 'extensor/array'
 require 'Utilities'
 require 'tmpdir'
 require 'date'
+require 'logger'
 
 class DownloadEngine
   include WebUtilities
+  @@coordinate3D = 2
+  @@modipCoordinateUnitId = 10
+  @@modipCoordinateSourceId = 7
   @@pubChemDataBase = 'pcassay'
   @@sid = "SID"
   @@cid = "CID"
@@ -24,8 +29,8 @@ class DownloadEngine
 
   #ENV["http_proxy"]
   def initialize(database_server, notify_server, assays_root, download_2d, download_3d, proxy = "")
-
-
+    @babel_command = "babel"
+    @sdf_extension = "sdf"
     @database_server = database_server
     @notify_server = notify_server
     @assays_root = assays_root
@@ -37,6 +42,11 @@ class DownloadEngine
     @proxy = proxy
     @service = ServiceSoap.new(@proxy)
     @running = false
+    @pids = []
+  end
+
+  def logger
+    @@logger ||= Logger.new("./log/service.log",'daily')
   end
 
   def proxy
@@ -46,6 +56,18 @@ class DownloadEngine
   def proxy= (other)
     @proxy = other
     @service.proxy = @proxy
+  end
+
+  def babel(input, output, input_extension, output_extension)
+    #puts "Converting compound: #{input} in 2D to: #{output} in 3D format"
+    logger.info("Converting compound: #{input} in 2D to: #{output} in 3D format")
+
+    pid = fork do
+      exec("#{@babel_command} -i #{input_extension} #{input} -o #{output_extension} #{output} --gen3D")
+    end
+    @pids << pid
+    Process.wait
+    @pids.delete(pid)
   end
 
   def download(id, query, target, filter = AssayOutcomeFilterType::EAssayOutcome_All, min_date = nil, max_date = nil)
@@ -150,6 +172,7 @@ class DownloadEngine
 
           begin #descarga del compuesto en 3d
             cmp = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info), cid)
+            #cmp = get_compound(get_download_url(cid,@sdf_extension), cid+".#{@sdf_extension}") #REST interface
           rescue Exception => e
             cmp = nil
             notify(CompoundNotificationClass.new(id, cid, "CompoundWarning", "error downloading compound: #{cid} in 3d, details:\n#{e.message}"))
@@ -157,12 +180,31 @@ class DownloadEngine
 
           begin #descarga del compuesto en 2d
             cmp2d = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info, false), cid)
+            #cmp2d = get_compound(get_download_url(cid,@sdf_extension,false), cid+".#{@sdf_extension}") #REST interface
 
             if cmp == nil
               cmp = cmp2d
             else
               cmp.copy_missing_data(cmp2d)
             end
+
+            if cmp.name =~ /.*;.*/
+              notify(CompoundNotificationClass.new(id, cid, "CompoundFailed", "compound: #{cid} descarted because it has more than one molecule"))
+              return
+            end
+
+            if cmp.molecular_formula.length > 0
+              mf = cmp.molecular_formula
+
+              if matches = mf.upcase.match(/.*(?<Boron>B\w{1}).*/)
+                logger.info("Molecular formula to process #{mf}. Pattern matched: #{matches['Boron']}\n")
+                if matches['Boron'] != 'BR'
+                  notify(CompoundNotificationClass.new(id, cid, "CompoundFailed", "compound: #{cid} descarted because it contains Boron elements"))
+                  return
+                end
+              end
+            end
+
           rescue Exception => e1
             leave_resource(:compound)
             notify(CompoundNotificationClass.new(id, cid, "CompoundWarning", "error downloading compound: #{cid} in 2d, details:\n#{e1.message}"),
@@ -170,13 +212,31 @@ class DownloadEngine
             next
           end
 
-          insert_type = cmp.is_3d ? '3D' : '2D'
           directory = cmp.is_3d ? File.join(@download_3d, cmp.filename) : File.join(@download_2d, cmp.filename)
           f =  File.new(directory, 'w')
           f.puts cmp.to_s
           f.close
+
           cmp.path = directory
-          @database_server.insert_compound(cmp)
+
+          if !cmp.is_3d
+            input = File.join(@download_2d, cmp.filename)
+            output = File.join(@download_3d, cmp.filename)
+
+            babel(input,output,@sdf_extension,@sdf_extension)
+
+            if File.file?(output)
+              cmp.set_3d_coordinate(@@coordinate3D)
+              cmp.set_coordinate_source(@@modipCoordinateSourceId)
+              cmp.set_coordinate_unit(@@modipCoordinateUnitId)
+              cmp.path = output
+            end
+          end
+
+          insert_type = cmp.is_3d ? '3D' : '2D'
+          directory = cmp.path
+
+              @database_server.insert_compound(cmp)
           leave_resource(:compound)
           notify(CompoundNotificationClass.new(id, cid, "CompoundInserted", "compound #{cid} was inserted in #{insert_type}. Locate at: #{directory}"))
         else
@@ -203,6 +263,10 @@ class DownloadEngine
 
   def notify(*arg)
     @notify_server.notify(*arg)
+
+    arg.each do |obj|
+      logger.info("[#{obj.query_id}: #{obj.event}] #{obj.message}")
+    end
   end
 
   def stop()
@@ -242,9 +306,12 @@ class DownloadEngine
   end
 
   def get_compound(url, filename)
-    filename = filename + '.' + url.split('.').last
+    filename = filename + '.' + url.split('.').last #comment this line on REST interface
     dir = File.join(Dir.tmpdir, filename)
     #WebUtilities.FTPRequest(url, dir)
+    #puts "Downloading compound: #{filename} from: #{url}"
+    logger.info("Downloading compound: #{filename} from: #{url}")
+
     WebUtilities.HTTPRequest(url, dir, @proxy)
     compound = nil
     case(@comp_info[:format])
@@ -253,6 +320,11 @@ class DownloadEngine
     end
     File.delete(dir)
     return compound
+  end
+
+  def get_download_url(cid,format,is_3d = true)
+    record_type = is_3d ? '3d' : '2d'
+    return "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/#{cid}/record/#{format}/?record_type=#{record_type}"
   end
 
   def is_running

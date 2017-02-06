@@ -176,7 +176,7 @@ class SDFCompound < CompoundFile
     @sdf[@@cactvs_hbond_acceptor] = other.inner_data[@@cactvs_hbond_acceptor] if other.cactvs_hbond_acceptor
     @sdf[@@cactvs_hbond_donor] = other.inner_data[@@cactvs_hbond_donor] if other.cactvs_hbond_donor
     @sdf[@@openeye_iso_smiles] = other.inner_data[@@openeye_iso_smiles] if other.openeye_iso_smiles
-    @sdf[@@cactvs_tpsa] = other.inner_data[@@cactvs_tpsa] if other.cactvs_tps
+    @sdf[@@cactvs_tpsa] = other.inner_data[@@cactvs_tpsa] if other.cactvs_tpsa
     @sdf[@@cactvs_rotatable_bond] = other.inner_data[@@cactvs_rotatable_bond] if other.cactvs_rotatable_bond
 
     if other.xlogp3
@@ -188,6 +188,18 @@ class SDFCompound < CompoundFile
 
   def struct= (other)
     @sdf.struct = other
+  end
+
+  def set_3d_coordinate(value)
+    @coordinate = value
+  end
+
+  def set_coordinate_source(value)
+    @coordinate_source_id = value
+  end
+
+  def set_coordinate_unit(value)
+    @coordinate_unit_id = value
   end
 
   def set_coordinate(other)
