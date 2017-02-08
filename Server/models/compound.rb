@@ -15,21 +15,22 @@ class Compound < ActiveRecord::Base
   	Compound.all.each do |c|
   		@items[c.cid] = [nil, nil, nil]
   	end
-    Compound.joins(' c inner join receptor_compounds rc on c.id = rc.compound_id').joins("inner join prepare_receptors pr on rc.prepare_receptor_id = pr.id").where('pr.receptor_type_id = 1', "pr.target_id = #{target.id}").group('c.cid').minimum(:value).each do |k,v|
+    Compound.joins(' c inner join receptor_compounds rc on c.id = rc.compound_id').joins("inner join prepare_receptors pr on rc.prepare_receptor_id = pr.id").where("pr.receptor_type_id = #{filter_one}", "pr.target_id = #{target.id}").group('c.cid').minimum(:value).each do |k,v|
      	@items[k][0] = v
      end
-    Compound.joins(' c inner join receptor_compounds rc on c.id = rc.compound_id').joins("inner join prepare_receptors pr on rc.prepare_receptor_id = pr.id").where('pr.receptor_type_id = 2', "pr.target_id = #{target.id}").group('c.cid').minimum(:value).each do |k,v|
+    Compound.joins(' c inner join receptor_compounds rc on c.id = rc.compound_id').joins("inner join prepare_receptors pr on rc.prepare_receptor_id = pr.id").where("pr.receptor_type_id = #{filter_two}", "pr.target_id = #{target.id}").group('c.cid').minimum(:value).each do |k,v|
      	@items[k][1] = v
      end
-    Compound.joins(' c inner join receptor_compounds rc on c.id = rc.compound_id').joins("inner join prepare_receptors pr on rc.prepare_receptor_id = pr.id").where('pr.receptor_type_id = 3', "pr.target_id = #{target.id}").group('c.cid').minimum(:value).each do |k,v|
+    Compound.joins(' c inner join receptor_compounds rc on c.id = rc.compound_id').joins("inner join prepare_receptors pr on rc.prepare_receptor_id = pr.id").where("pr.receptor_type_id = #{filter_tree}", "pr.target_id = #{target.id}").group('c.cid').minimum(:value).each do |k,v|
      	@items[k][2] = v
      end
     @compounds = @items.to_a.sort do |one, other|
-    	compare_to([one[1][filter_one], other[1][filter_one]],
-                 [one[1][filter_two], other[1][filter_two]],
-                 [one[1][filter_tree], other[1][filter_tree]], [one[0].to_i, other[0].to_i])
-    	
-    end  
+      if !(one[0].nil? or other[0].nil?)
+        compare_to([one[1][filter_one], other[1][filter_one]],
+                   [one[1][filter_two], other[1][filter_two]],
+                   [one[1][filter_tree], other[1][filter_tree]], [one[0].to_i, other[0].to_i])
+      end
+    end
   	
   end
   

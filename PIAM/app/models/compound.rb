@@ -73,20 +73,22 @@ class Compound < ActiveRecord::Base
      	  @items[key][filter_tree] = [compound.value, compound.path]
      end
     @compounds = @items.sort do |one, other|
-		if sort_column
-		    sort_column = sort_column.to_i
-			one_1 = one[1][sort_column] ? one[1][sort_column][0] : nil
-			other_1 = other[1][sort_column] ? other[1][sort_column][0] : nil
-			sort_by_column(one_1, other_1, one[0].to_i, other[0].to_i, sort_direction)
-		else
-			one_1 = one[1][filter_one] ? one[1][filter_one][0] : nil
-			other_1 = other[1][filter_one] ? other[1][filter_one][0] : nil
-			one_2 = one[1][filter_two] ? one[1][filter_two][0] : nil
-			other_2 = other[1][filter_two] ? other[1][filter_two][0] : nil
-			one_3 = one[1][filter_tree] ? one[1][filter_tree][0] : nil
-			other_3 = other[1][filter_tree] ? other[1][filter_tree][0] : nil
-			compare_to([one_1, other_1], [one_2, other_2], [one_3, other_3], [one[0].to_i, other[0].to_i])
-		end
+      if !(one[0].nil? or other[0].nil?)
+        if sort_column
+          sort_column = sort_column.to_i
+          one_1 = one[1][sort_column] ? one[1][sort_column][0] : nil
+          other_1 = other[1][sort_column] ? other[1][sort_column][0] : nil
+          sort_by_column(one_1, other_1, one[0].to_i, other[0].to_i, sort_direction)
+        else
+          one_1 = one[1][filter_one] ? one[1][filter_one][0] : nil
+          other_1 = other[1][filter_one] ? other[1][filter_one][0] : nil
+          one_2 = one[1][filter_two] ? one[1][filter_two][0] : nil
+          other_2 = other[1][filter_two] ? other[1][filter_two][0] : nil
+          one_3 = one[1][filter_tree] ? one[1][filter_tree][0] : nil
+          other_3 = other[1][filter_tree] ? other[1][filter_tree][0] : nil
+          compare_to([one_1, other_1], [one_2, other_2], [one_3, other_3], [one[0].to_i, other[0].to_i])
+        end
+      end
     end
   end
 
@@ -123,7 +125,7 @@ class Compound < ActiveRecord::Base
   private
 
   def self.compare(one, two)
-    if one[0] and two[0]
+    if one[0] and two[0] and one[1] and two[1]
       d1 = (one[0] - two[0]).round(3) #fix double-precision float-point representation
       d2 = (one[1] - two[1]).round(3) #fix double-precision float-point representation
       return d1 <=> d2
