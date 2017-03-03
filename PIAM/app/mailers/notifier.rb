@@ -8,9 +8,9 @@ class Notifier < ActionMailer::Base
   #
   def docking_compound(emails, order_hash, query, first, second, third)
     @greeting = "Hi"
-	@order_hash = order_hash
-	@query = query
-	@first, @second, @third = first, second, third
+    @order_hash = order_hash
+    @query = query
+    @first, @second, @third = first, second, third
     mail :to => emails, :subject => 'MODIP: Compound Docking Confirmation [not reply]'
   end
 end
