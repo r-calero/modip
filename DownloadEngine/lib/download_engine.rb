@@ -196,6 +196,12 @@ class DownloadEngine
             if cmp.molecular_formula.length > 0
               mf = cmp.molecular_formula
 
+              if matches = mf.match(/.*(?<Tellanyl>Te).*/)
+                logger.info("Molecular formula to process #{mf}. Pattern matched: #{matches['Tellanyl']}\n")
+                notify(CompoundNotificationClass.new(id, cid, "CompoundFailed", "compound: #{cid} descarted because it contains Tellanyl elements"))
+                return
+              end
+
               if matches = mf.upcase.match(/.*(?<Boron>B\w{1}).*/)
                 logger.info("Molecular formula to process #{mf}. Pattern matched: #{matches['Boron']}\n")
                 if matches['Boron'] != 'BR'
