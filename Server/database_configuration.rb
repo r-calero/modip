@@ -5,7 +5,7 @@ ActiveRecord::Base.establish_connection(
   :adapter => "mysql",
   :host => "127.0.0.1",
   :database => "censa",
-  :username => "admin",
-  :password => "c3nsa_adm1n",
+  :username => "admindemas",
+  :password => "c3nsa_adm1ndemas",
   :pool => 20
 )
