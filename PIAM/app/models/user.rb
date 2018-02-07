@@ -1,6 +1,9 @@
 require 'digest/sha2'
 
 class User < ActiveRecord::Base
+  DefaultUser = "test"
+  DefaultPass = "test"
+
   has_many :queries
 
   validates :name, :presence => true, :uniqueness => true

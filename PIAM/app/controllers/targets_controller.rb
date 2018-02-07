@@ -1,5 +1,5 @@
 class TargetsController < ApplicationController
-#  skip_before_filter :authorize
+  skip_before_filter :authorize
 
   # GET /targets
   # GET /targets.json

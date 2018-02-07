@@ -1,4 +1,5 @@
 class ReceptorTypesController < ApplicationController
+	skip_before_filter :authorize
   
   def index
 	@receptor_types = ReceptorType.page(params[:page]).per(10)
