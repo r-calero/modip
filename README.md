@@ -19,6 +19,8 @@ MODIP: Molecular Docking Integrated Platform
    PhD. Pedro A. Valiente Flores
 
    PhD. Pedro Geraldo Pascutti
+   
+   PhD. Humberto Carrillo Calvet
  
 
 ## License
