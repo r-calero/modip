@@ -40,5 +40,5 @@ MODIP: Molecular Docking Integrated Platform
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-## Rererence
+## Reference
    Naranjo-Feliciano D, Izquierdo-Alvarez L, Calero-Ramos R, Hernández-Alvarez L, Bouza-Figueroa J, Barreto-Gomes DE, Valiente-Flores PA, Carrillo-Calvet HA, Pascutti PG. A molecular docking integrated platform for virtual screening of bioactive compounds. Biotecnol Apl. 2021;38(3):3211- 3217.
