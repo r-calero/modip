@@ -13,3 +13,5 @@ DownloadEngine/test*
 docker/nginx/certs/*.pem
 docker/nginx/certs/*.crt
 docker/nginx/certs/*.key
+
+Backup-codes*.txt
