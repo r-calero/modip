@@ -9,7 +9,8 @@
   <%= csrf_meta_tags %>
 </head>
 <body data-target=".bs-docs-sidebar" data-spy="scroll">
-<div class="container-fluid">
+<div class="container">
+<%= render :partial => 'home/navbar', :locals => { :active => 'help' } %>
   <div class="row-fluid">
   <!--Sidebar content-->
   <div class="span3 bs-docs-sidebar">
@@ -66,7 +67,7 @@
         <p>The users can always accede to the resources related to the <em>assays</em>, <em>compounds</em> and <em>targets</em> storages in the system no matter what if the users is login or not. Once a compound is inserted into the system it can be quickly found by its CID using the search input located in the horizontal menu bar at top of every page (see the example below in figure 1 and 2).</p>
         <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP10.png" class="img-polaroid" alt=""/>
+          <%= image_tag "modip10.png", :class => "img-polaroid", :alt => "" %>
           <div class="caption text-center">
             <p>Fig 1. The assays listed in the system.</p>
           </div>
@@ -75,7 +76,7 @@
 
          <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP11.png" class="img-polaroid" alt=""/>
+          <%= image_tag "modip11.png", :class => "img-polaroid", :alt => "" %>
           <div class="caption text-center">
             <p>Fig 2. The compounds in the system.</p>
           </div>
@@ -90,7 +91,7 @@
 
         <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP5.png" class="img-polaroid" alt=""/>
+          <%= image_tag "modip5.png", :class => "img-polaroid", :alt => "" %>
           <div class="caption text-center">
             <p>Fig 3. In this form you can specify the parameters that the molecular docking will take in account such as: the pdbqt file, type of receptor, coordinate of the center grid, the size of the grid and so on.</p>
           </div>
@@ -108,7 +109,7 @@
       
       <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP7.png" class="img-polaroid" alt=""/>
+          <%= image_tag "modip7.png", :class => "img-polaroid", :alt => "" %>
           <div class="caption text-center">
             <p>Fig 4. This is an example of a download, the details of the query are for the target cathepsin b with the specific query: cathepsin B 27 active SAR taking into account all the assays (setting the input Outcome assay filter to eAssayOutcome_All) at any date.</p>
           </div>
@@ -124,7 +125,7 @@
 
       <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP12.png" class="img-polaroid" alt=""/>
+          <%= image_tag "modip12.png", :class => "img-polaroid", :alt => "" %>
           <div class="caption text-center">
             <p>Fig 5. This view is where you can choose which compounds include in a molecular docking process.</p>
           </div>
@@ -135,7 +136,7 @@
 
         <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP14.png" class="img-polaroid" alt=""/>
+          <%= image_tag "modip14.png", :class => "img-polaroid", :alt => "" %>
           <div class="caption text-center">
             <p>Fig 6. Here the system show the molecular docking progress in details. You can see the target and the receptors with its configurations.</p>
           </div>
@@ -153,7 +154,7 @@
 
       <div class="row-fluid">
           <div class="fix">
-          <img src="assets/MODIP15.png" class="img-polaroid" alt=""/>
+          <%= image_tag "modip15.png", :class => "img-polaroid", :alt => "" %>
           <div class="caption text-center">
             <p>Fig 7. The order list can be arrange by any of the three column corresponding to that selected for the main ranking. Also the ranking list view allow download the associate data to each compound in the molecular docking process, corresponding to each receptor.</p>
           </div>
