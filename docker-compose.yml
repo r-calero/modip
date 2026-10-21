@@ -35,10 +35,10 @@ x-ruby-service: &ruby-service
   image: ${MODIP_IMAGE_PREFIX}/app:${MODIP_IMAGE_TAG}
   # Ruby 2.2 / libv8 binaries and MySQL 5.7 exist only for x86_64.
   platform: linux/amd64
-  build:
-    context: .
-    dockerfile: docker/ruby/Dockerfile
-    target: app
+  # The app image is built once, by the "database" service; download and web
+  # reuse it. Building the same tag from several services at once fails with
+  # 'image "...": already exists' on the containerd image store.
+  pull_policy: never
   init: true
   # A TTY makes Ruby flush its output line by line, so `docker compose logs` shows it live.
   tty: true
@@ -78,6 +78,10 @@ services:
   # DataBaseServer (Server/database_server.rb): ActiveRecord access for the download engine.
   database:
     <<: *ruby-service
+    build:
+      context: .
+      dockerfile: docker/ruby/Dockerfile
+      target: app
     hostname: database
     working_dir: /app/Server
     command: ["ruby", "database_server.rb"]
@@ -182,20 +186,20 @@ services:
     restart: unless-stopped
     environment:
       MODIP_SERVER_NAME: ${MODIP_SERVER_NAME}
-      MODIP_HTTPS_REDIRECT_PORT: ${MODIP_HTTPS_REDIRECT_PORT}
+      MODIP_HTTPS_REDIRECT_PORT: ${MODIP_HTTPS_REDIRECT_PORT:-}
       MODIP_WEB_PORT: ${MODIP_WEB_PORT}
-      SSL_CERT_FILE: ${SSL_CERT_FILE}
-      SSL_KEY_FILE: ${SSL_KEY_FILE}
+      SSL_CERT_FILE: ${SSL_CERT_FILE:-fullchain.pem}
+      SSL_KEY_FILE: ${SSL_KEY_FILE:-privkey.pem}
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE}
       NGINX_PROXY_READ_TIMEOUT: ${NGINX_PROXY_READ_TIMEOUT}
       NGINX_ENVSUBST_FILTER: "^(MODIP_|SSL_|NGINX_CLIENT|NGINX_PROXY)"
     volumes:
       - ./docker/nginx/templates:/etc/nginx/templates:ro
-      - ${SSL_CERT_DIR}:/etc/nginx/certs:ro
-      - ${ACME_WEBROOT_DIR}:/var/www/acme:ro
+      - ${SSL_CERT_DIR:-./docker/nginx/certs}:/etc/nginx/certs:ro
+      - ${ACME_WEBROOT_DIR:-./docker/nginx/acme}:/var/www/acme:ro
     ports:
-      - "${NGINX_HTTP_PORT}:80"
-      - "${NGINX_HTTPS_PORT}:443"
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
     networks: [modip]
     healthcheck:
       test: ["CMD-SHELL", "wget -q --no-check-certificate -O /dev/null https://127.0.0.1/ || exit 1"]
