@@ -5,3 +5,5 @@ Server/tmp/
 #MODIP gem
 *.gem
 .idea
+DownloadEngine/test*
+.DS_Store
