@@ -153,8 +153,10 @@ así que la instalación sin Docker sigue funcionando igual.
 - SMTP (`MODIP_SMTP_*`), `MODIP_SECRET_TOKEN` y `MODIP_SERVE_STATIC_ASSETS`.
 - `config.assets.initialize_on_precompile = false`, para precompilar assets sin
   conectarse a MySQL ni a dRuby.
-- `PIAM/lib/sass_ruby2_compat.rb`: corrección de una línea de Sass 3.2 aplicada
-  a Sass 3.1.15, que con Ruby ≥ 2.0 no comprime CSS.
+- `PIAM/lib/ruby2_compat.rb`: la corrección de una línea de Sass 3.2 y de
+  Sprockets 2.2 aplicada a Sass 3.1.15 y Sprockets 2.1.3. Con Ruby ≥ 2.0, sin
+  ella el CSS no se comprime y se ignoran los `//= require` de los assets
+  (jQuery y Bootstrap no se incluyen).
 
 ## Notas
 

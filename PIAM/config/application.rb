@@ -9,7 +9,7 @@ if defined?(Bundler)
   # Bundler.require(:default, :assets, Rails.env)
 end
 
-require File.expand_path('../../lib/sass_ruby2_compat', __FILE__)
+require File.expand_path('../../lib/ruby2_compat', __FILE__)
 
 module PIAM
   class Application < Rails::Application

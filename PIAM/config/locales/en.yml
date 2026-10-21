@@ -3,3 +3,15 @@
 
 en:
   hello: "Hello world"
+  layouts:
+    application:
+      What_is_MODIP?: "What is MODIP?"
+      Basis: "Basis"
+      Downloads: "Downloads"
+      Molecular_Docking: "Molecular Docking"
+      Ranking_List: "Ranking List"
+      Description: "Description"
+      Authors: "Authors"
+      Reference: "Reference"
+      License: "License"
+      Financial_support: "Financial support"
