@@ -1,5 +1,6 @@
 class Notifier < ActionMailer::Base
-  default :from => "someone@gmail.com"
+  # Sender address; Gmail requires it to be the SMTP account or one of its aliases.
+  default :from => ENV['MODIP_SMTP_FROM'] || ENV['MODIP_SMTP_USER'] || "someone@gmail.com"
 
   # Subject can be set in your I18n file at config/locales/en.yml
   # with the following lookup:
