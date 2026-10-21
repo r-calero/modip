@@ -25,7 +25,7 @@ class DockingObserver < UserObserver
 			@notifications << UserNotification.new(notification.event, hash, @last_id)
 		elsif notification.event == "Finished"
 			@finish_notification += 1
-			if @last_id - @finish_notification == @total # fin del docking (los otros finished son debido a dividir el conjunto de compuestos)
+			if @last_id - @finish_notification == @total # end of the docking (the other Finished events come from splitting the compound set)
 				hash = {:message => notification.message, :num_modes => notification.num_modes}
 				@notifications << UserNotification.new(notification.event, hash, @last_id)
 				stop_listen() 

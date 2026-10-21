@@ -110,10 +110,10 @@ class DownloadEngine
       aid = aid.to_s
       result, assay_path = @database_server.checkout_assay(aid)
       table_info = nil
-      if result == 1 #esta siendo procesado
+      if result == 1 # being processed by another process
         notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "the assay #{aid} is being processed by another process"))
         next
-      elsif result == 0  #el ensayo no ha sido insertado en la base de datos
+      elsif result == 0  # the assay is not in the database yet
         @aid = aid
         assay_description = nil
         column_description = nil
@@ -141,7 +141,7 @@ class DownloadEngine
         @database_server.insert_assay(aid, target, assay_description, column_description, table_info.path)
         leave_resource(:assay)
         notify(AssayNotificationClass.new(id, aid, "AssayInserted", "assay #{aid} was inserted"))
-      else #el ensayo esta en la base de datos
+      else # the assay is already in the database
         table_info = TableInfo.new(assay_path)
         notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "assay #{aid} was processed"))
       end
@@ -161,22 +161,22 @@ class DownloadEngine
       begin
         cid = row[table_header[@@cid]]
         result = @database_server.checkout_compound(cid)
-        if result == 1  #esta siendo procesado
+        if result == 1  # being processed by another process
           notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "the compound #{cid} is being processed by another process"))
           next
-        elsif result == 0 #el compuesto no ha sido insertado en la base de datos
+        elsif result == 0 # the compound is not in the database yet
           @cid = cid
           cmp = nil
           cmp2d = nil
 
-          begin #descarga del compuesto en 3d
+          begin # download the compound in 3D
             cmp = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info), cid)
           rescue Exception => e
             cmp = nil
             notify(CompoundNotificationClass.new(id, cid, "CompoundWarning", "error downloading compound: #{cid} in 3d, details:\n#{e.message}"))
           end
 
-          begin #descarga del compuesto en 2d
+          begin # download the compound in 2D
             cmp2d = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info, false), cid)
 
             if cmp == nil

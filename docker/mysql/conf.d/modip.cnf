@@ -1,0 +1,10 @@
+# MySQL settings for MODIP (Rails 3.2 + mysql2 0.3.17, schema dumped from MySQL 5.5).
+[mysqld]
+# MySQL 5.5 defaults: no strict mode and no ONLY_FULL_GROUP_BY, which the
+# application queries were written for.
+sql_mode = NO_ENGINE_SUBSTITUTION
+character-set-server = latin1
+collation-server = latin1_swedish_ci
+max_allowed_packet = 64M
+max_connections = 200
+skip-name-resolve

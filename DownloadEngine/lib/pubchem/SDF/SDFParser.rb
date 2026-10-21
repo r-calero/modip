@@ -33,8 +33,8 @@ module SDFParser
     value = ''
     obj  = SDF.new
     data.each_line do |line|
-      if line =~ @@tag_expression            #esta es una linea de la cabeza de una etiqueta
-        if key != nil                     #se tienen los dos valores de una nueva etiqueta
+      if line =~ @@tag_expression            # header line of a tag
+        if key != nil                     # both values of the previous tag are complete
           obj[key.to_s] = value
           value =''
         end
@@ -46,7 +46,7 @@ module SDFParser
         value += line
       end
     end
-    if key != nil                                  #fin del fichero
+    if key != nil                                  # end of file
       obj[key.to_s] = value
     else
       obj.struct = value

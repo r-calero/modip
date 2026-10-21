@@ -7,3 +7,9 @@ Server/tmp/
 .idea
 DownloadEngine/test*
 .DS_Store
+
+# Docker deployment
+.env
+docker/nginx/certs/*.pem
+docker/nginx/certs/*.crt
+docker/nginx/certs/*.key

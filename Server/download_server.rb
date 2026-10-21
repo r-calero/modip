@@ -25,7 +25,7 @@ class DownloadServer
       f.puts Process.pid
     end
     DRb.start_service
-    @database_server = DRbObject.new(nil, "druby://localhost:9001")
+    @database_server = DRbObject.new(nil, ENV['MODIP_DATABASE_DRB_URI'] || "druby://localhost:9001")
     # Create a socket, bind it to localhost:4242, and start listening.
     # Runs once in the parent; all forked children inherit the socket's
     # file descriptor.
@@ -209,7 +209,7 @@ class DownloadServer
         # new connection is ready to be dequeued.
         socket, _ = @acceptor.accept
         unless server
-          server = DRbObject.new(nil, "druby://localhost:1989")
+          server = DRbObject.new(nil, ENV['MODIP_DOWNLOAD_DRB_URI'] || "druby://localhost:1989")
         end
         @params = Marshal.load(socket.readline.chomp)
         download = server.get_download_engine(@params.query_id)
@@ -262,6 +262,6 @@ trap("TERM") do
 end
 
 
-DRb.start_service('druby://localhost:1989', download_server)
+DRb.start_service(ENV['MODIP_DOWNLOAD_DRB_URI'] || 'druby://localhost:1989', download_server)
 puts DRb.uri
 DRb.thread.join

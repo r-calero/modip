@@ -10,7 +10,7 @@ class QueryManager < NotificationManager
   attr_reader :download_server
 
   def initialize()
-    @download_server = DRbObject.new(nil, "druby://localhost:1989")
+    @download_server = DRbObject.new(nil, ENV['MODIP_DOWNLOAD_DRB_URI'] || "druby://localhost:1989")
     @downloads_observers = {}
     @scheduler = Rufus::Scheduler.start_new
     Query.all.each do |query|

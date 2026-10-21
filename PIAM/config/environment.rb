@@ -9,14 +9,14 @@ PIAM::Application.configure do
 	config.action_mailer.delivery_method = :smtp
 	
 	config.action_mailer.smtp_settings = {
-	    :address => "smtp.gmail.com",
-        :port => 587,
+	    :address => ENV['MODIP_SMTP_ADDRESS'] || "smtp.gmail.com",
+        :port => (ENV['MODIP_SMTP_PORT'] || 587).to_i,
         #:domain => "gmail.com",
         #:authentication => "login",
-        :authentication => "plain",
-        :user_name => "someone@gmail.com",
-        :password => "secret",
-        :enable_starttls_auto => true
+        :authentication => (ENV['MODIP_SMTP_AUTHENTICATION'] || "plain").to_sym,
+        :user_name => ENV['MODIP_SMTP_USER'] || "someone@gmail.com",
+        :password => ENV['MODIP_SMTP_PASSWORD'] || "secret",
+        :enable_starttls_auto => ENV['MODIP_SMTP_STARTTLS'] != 'false'
 	}
 end
 

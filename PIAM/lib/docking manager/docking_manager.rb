@@ -5,7 +5,7 @@ require_relative '../notification/notification_manager'
 class DockingManager < NotificationManager
 
   def initialize()
-    @server = DRbObject.new(nil, "druby://localhost:1997")
+    @server = DRbObject.new(nil, ENV['MODIP_DOCKING_DRB_URI'] || "druby://localhost:1997")
     @observer = {}
     #super()
   end

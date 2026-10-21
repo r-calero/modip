@@ -1,6 +1,9 @@
 ## modip
 MODIP: Molecular Docking Integrated Platform
 
+## Deployment
+   Docker Compose deployment (nginx + HTTPS, MySQL and every dRuby server in its own container): see [DOCKER.md](DOCKER.md).
+
 ## Authors
    BSc. Leobel Izquierdo Alvarez;
 

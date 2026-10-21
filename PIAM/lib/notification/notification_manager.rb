@@ -6,7 +6,7 @@ class NotificationManager
     sse = SSE.new
     options = {:id => ""}
     if observer
-      if last_event_id >= 0  #se han perdido datos en la comunicacion
+      if last_event_id >= 0  # data was lost in the communication
           observer.history.length.times do |i|
             notification = observer.history[i]
             if notification.id > last_event_id
@@ -24,7 +24,7 @@ class NotificationManager
           options[:event] = notification.event
           sse.write(options, notification.message)
         else
-          sse.write(options, "nothing to show") # un comentario para mantener la comunicacion
+          sse.write(options, "nothing to show") # a comment to keep the connection alive
         end
 	else
       sse.write({:event => 'Stop'}, {:message => "stop", :channel => channel})

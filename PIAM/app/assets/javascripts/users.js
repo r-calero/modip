@@ -83,7 +83,7 @@ function remove_from_selection(cid){
 		checkbox.addClass(last_column.attr('class'));
 	}
 	if(last_row.children().length > 2){
-		//eliminar el valor de las ultimas 2 columna
+		// remove the value of the last 2 columns
 		last_column.remove(); 
 		$("#selection tbody tr td:last").remove();
 	}
@@ -102,7 +102,7 @@ $(".checkbox").live("click",function(){
     var cid = obj.attr('id');
     if(obj.is(':checked')){
         compound_selected[current_page].push(cid);
-        // selecionados todos los compuestos de la pagina;
+        // all the compounds of the page are selected;
         if(compound_selected[current_page].length == $("#select tbody tr td input:checkbox").length){
         	per_page.attr('checked', true);
         	page_selected[current_page] = true;
@@ -123,7 +123,7 @@ $(".checkbox").live("click",function(){
         } 
         var page_array = compound_selected[current_page];
         var indexOf = $.inArray(cid, page_array);
-        //elemina el elemento del array de la pagina actual;
+        // remove the element from the current page array;
         compound_selected[current_page].splice(indexOf, 1);
     }
 });
@@ -198,7 +198,7 @@ $('.pagination ul li a').live("click",function(){
         var obj = $(this);
         var href = obj.attr('href');
         
-		// determina la pagina actual;
+		// find the current page;
         var page_num = href.match(/page=\d+/);
         if(page_num != undefined){
         	current_page = parseInt(page_num.toString().match(/\d+/));       
@@ -210,7 +210,7 @@ $('.pagination ul li a').live("click",function(){
 			$("#selected").attr('page-cids', "all");
 		}
 		else{
-        //crea una lista de los cids separados por :;
+        // build a list of the cids separated by :;
 			var cids = make_list(compound_selected[current_page]);
 			$("#selected").attr('page-cids', cids);
 		}

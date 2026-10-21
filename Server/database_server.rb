@@ -223,7 +223,7 @@ Signal.trap("TERM") do
                  puts 'Stopping ...'
                  puts "Exiting"
                 end
-DRb.start_service('druby://localhost:9001', database_server)
+DRb.start_service(ENV['MODIP_DATABASE_DRB_URI'] || 'druby://localhost:9001', database_server)
 puts DRb.uri
 begin
   DRb.thread.join

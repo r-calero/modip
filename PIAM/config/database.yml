@@ -25,12 +25,19 @@ test:
   database: db/test.sqlite3
   pool: 20
 
+# In Docker the MODIP_DB_* variables come from .env; without them the
+# original values are used.
 production:
   adapter: mysql2
-  encoding: utf8
+  encoding: <%= ENV['MODIP_DB_ENCODING'] || 'utf8' %>
   reconnect: true
-  database: censa
-  pool: 20
-  username: admindemás
-  password: c3nsa_adm1ndemás
+  database: <%= ENV['MODIP_DB_NAME'] || 'censa' %>
+  pool: <%= ENV['MODIP_DB_POOL'] || 20 %>
+  username: <%= ENV['MODIP_DB_USER'] || 'admindemás' %>
+  password: <%= ENV['MODIP_DB_PASSWORD'] || 'c3nsa_adm1ndemás' %>
+<% if ENV['MODIP_DB_HOST'] %>
+  host: <%= ENV['MODIP_DB_HOST'] %>
+  port: <%= ENV['MODIP_DB_PORT'] || 3306 %>
+<% else %>
   socket: /tmp/mysql.sock
+<% end %>

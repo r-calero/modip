@@ -1,0 +1,217 @@
+# MODIP: Molecular Docking Integrated Platform
+#
+#   nginx ──HTTPS──> web (PIAM, Rails 3.2 / Puma)
+#                     │  dRuby                 ▲ dRuby callbacks (observers)
+#                     ├──> download ──dRuby──> database ──> mysql
+#                     └──> docking  ──────────────────────> mysql
+#
+# Every MODIP server runs in its own container and they talk over dRuby on the
+# internal network "modip". Only nginx publishes ports (plus MySQL on
+# 127.0.0.1 for administration). All settings live in .env.
+#
+#   cp .env.example .env      # then edit it
+#   docker compose up -d --build
+
+name: ${COMPOSE_PROJECT_NAME:-modip}
+
+x-ruby-env: &ruby-env
+  TZ: ${TZ}
+  MODIP_DB_HOST: mysql
+  MODIP_DB_PORT: "3306"
+  MODIP_DB_NAME: ${MODIP_DB_NAME}
+  MODIP_DB_USER: ${MODIP_DB_USER}
+  MODIP_DB_PASSWORD: ${MODIP_DB_PASSWORD}
+  MODIP_DB_POOL: ${MODIP_DB_POOL}
+  # Required by the entrez gem, which download_engine loads (web included).
+  ENTREZ_EMAIL: ${ENTREZ_EMAIL}
+  # dRuby addresses. The host part is the service hostname; each server binds
+  # to its own address and the others reach it (and call it back) through it.
+  MODIP_DATABASE_DRB_URI: druby://database:${MODIP_DATABASE_DRB_PORT}
+  MODIP_DOWNLOAD_DRB_URI: druby://download:${MODIP_DOWNLOAD_DRB_PORT}
+  MODIP_DOCKING_DRB_URI: druby://docking:${MODIP_DOCKING_DRB_PORT}
+  MODIP_WEB_DRB_URI: druby://web:${MODIP_WEB_DRB_PORT}
+
+x-ruby-service: &ruby-service
+  image: ${MODIP_IMAGE_PREFIX}/app:${MODIP_IMAGE_TAG}
+  # Ruby 2.2 / libv8 binaries and MySQL 5.7 exist only for x86_64.
+  platform: linux/amd64
+  build:
+    context: .
+    dockerfile: docker/ruby/Dockerfile
+    target: app
+  init: true
+  # A TTY makes Ruby flush its output line by line, so `docker compose logs` shows it live.
+  tty: true
+  restart: unless-stopped
+  networks: [modip]
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MODIP_DB_NAME}
+      MYSQL_USER: ${MODIP_DB_USER}
+      MYSQL_PASSWORD: ${MODIP_DB_PASSWORD}
+    command: ["--innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL_SIZE}"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/conf.d:/etc/mysql/conf.d:ro
+      - ./docker/mysql/initdb:/docker-entrypoint-initdb.d:ro
+      - ${MODIP_DB_SCHEMA_FILE}:/modip/schema.sql:ro
+    ports:
+      - "127.0.0.1:${MYSQL_HOST_PORT}:3306"
+    networks: [modip]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # DataBaseServer (Server/database_server.rb): ActiveRecord access for the download engine.
+  database:
+    <<: *ruby-service
+    hostname: database
+    working_dir: /app/Server
+    command: ["ruby", "database_server.rb"]
+    environment:
+      <<: *ruby-env
+      MODIP_DRB_URI: druby://database:${MODIP_DATABASE_DRB_PORT}
+    healthcheck:
+      test: ["CMD", "drb-healthcheck"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 20s
+    depends_on:
+      mysql: { condition: service_healthy }
+
+  # DownloadServer (Server/download_server.rb): PubChem downloads (DownloadEngine 2.x, PUG REST).
+  download:
+    <<: *ruby-service
+    hostname: download
+    working_dir: /app/Server
+    command: ["ruby", "download_server.rb", "${MODIP_DOWNLOAD_PROCESSES}"]
+    environment:
+      <<: *ruby-env
+      MODIP_DRB_URI: druby://download:${MODIP_DOWNLOAD_DRB_PORT}
+      MODIP_PROXY: ${MODIP_PROXY}
+      DOWNLOAD_ENGINE_SSL_VERIFY: ${DOWNLOAD_ENGINE_SSL_VERIFY}
+    volumes:
+      - modip_data:/app/Server/data
+      - download_log:/app/Server/log
+    healthcheck:
+      test: ["CMD", "drb-healthcheck"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 20s
+    depends_on:
+      database: { condition: service_healthy }
+
+  # DockingServer (Server/docking_server.rb): Open Babel + AutoDock Vina + AutoDockTools.
+  docking:
+    <<: *ruby-service
+    image: ${MODIP_IMAGE_PREFIX}/docking:${MODIP_IMAGE_TAG}
+    build:
+      context: .
+      dockerfile: docker/ruby/Dockerfile
+      target: docking
+    hostname: docking
+    working_dir: /app/Server
+    command: ["ruby", "docking_server.rb"]
+    environment:
+      <<: *ruby-env
+      MODIP_DRB_URI: druby://docking:${MODIP_DOCKING_DRB_PORT}
+    volumes:
+      # Same volume as download: compound paths stored in MySQL point into it.
+      - modip_data:/app/Server/data
+    healthcheck:
+      test: ["CMD", "drb-healthcheck"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 20s
+    depends_on:
+      mysql: { condition: service_healthy }
+
+  # PIAM web application (Rails 3.2.8). Puma 1.6 runs one process with threads,
+  # which DRb needs: the download/docking observers live in this process.
+  web:
+    <<: *ruby-service
+    hostname: web
+    working_dir: /app/PIAM
+    command: ["bundle", "exec", "puma", "-e", "production", "-b", "tcp://0.0.0.0:${MODIP_WEB_PORT}", "-t", "${PUMA_MIN_THREADS}:${PUMA_MAX_THREADS}"]
+    environment:
+      <<: *ruby-env
+      RAILS_ENV: production
+      RACK_ENV: production
+      MODIP_DRB_URI: druby://web:${MODIP_WEB_DRB_PORT}
+      MODIP_WEB_PORT: ${MODIP_WEB_PORT}
+      MODIP_SECRET_TOKEN: ${MODIP_SECRET_TOKEN}
+      MODIP_SERVE_STATIC_ASSETS: "true"
+      MODIP_SMTP_ADDRESS: ${MODIP_SMTP_ADDRESS}
+      MODIP_SMTP_PORT: ${MODIP_SMTP_PORT}
+      MODIP_SMTP_AUTHENTICATION: ${MODIP_SMTP_AUTHENTICATION}
+      MODIP_SMTP_USER: ${MODIP_SMTP_USER}
+      MODIP_SMTP_PASSWORD: ${MODIP_SMTP_PASSWORD}
+      MODIP_SMTP_STARTTLS: ${MODIP_SMTP_STARTTLS}
+    volumes:
+      - web_log:/app/PIAM/log
+    healthcheck:
+      # DRb callback server up (app booted) and Puma answering.
+      test: ["CMD-SHELL", "drb-healthcheck && ruby -rsocket -e 'TCPSocket.new(%q(127.0.0.1), ENV.fetch(%q(MODIP_WEB_PORT)).to_i).close'"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 60s
+    depends_on:
+      mysql: { condition: service_healthy }
+      download: { condition: service_healthy }
+      docking: { condition: service_healthy }
+
+  nginx:
+    image: nginx:${NGINX_VERSION}
+    restart: unless-stopped
+    environment:
+      MODIP_SERVER_NAME: ${MODIP_SERVER_NAME}
+      MODIP_HTTPS_REDIRECT_PORT: ${MODIP_HTTPS_REDIRECT_PORT}
+      MODIP_WEB_PORT: ${MODIP_WEB_PORT}
+      SSL_CERT_FILE: ${SSL_CERT_FILE}
+      SSL_KEY_FILE: ${SSL_KEY_FILE}
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE}
+      NGINX_PROXY_READ_TIMEOUT: ${NGINX_PROXY_READ_TIMEOUT}
+      NGINX_ENVSUBST_FILTER: "^(MODIP_|SSL_|NGINX_CLIENT|NGINX_PROXY)"
+    volumes:
+      - ./docker/nginx/templates:/etc/nginx/templates:ro
+      - ${SSL_CERT_DIR}:/etc/nginx/certs:ro
+      - ${ACME_WEBROOT_DIR}:/var/www/acme:ro
+    ports:
+      - "${NGINX_HTTP_PORT}:80"
+      - "${NGINX_HTTPS_PORT}:443"
+    networks: [modip]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --no-check-certificate -O /dev/null https://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      web: { condition: service_healthy }
+
+networks:
+  modip:
+    name: ${COMPOSE_PROJECT_NAME:-modip}_net
+
+volumes:
+  mysql_data:
+  modip_data:
+  download_log:
+  web_log:

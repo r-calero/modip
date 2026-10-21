@@ -1,0 +1,19 @@
+# "Behind Apache" mode: an existing Apache terminates TLS and proxies to nginx.
+# nginx serves plain HTTP only, published on NGINX_BIND_ADDRESS:NGINX_PROXY_PORT
+# (127.0.0.1:8484 by default), and needs no certificates.
+#
+# Enable it in .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.apache.yml
+# Requires Docker Compose 2.24.4 or newer (for !override).
+
+services:
+  nginx:
+    environment:
+      SSL_CERT_FILE: unused
+      SSL_KEY_FILE: unused
+    volumes: !override
+      - ./docker/nginx/templates-http:/etc/nginx/templates:ro
+    ports: !override
+      - "${NGINX_BIND_ADDRESS:-127.0.0.1}:${NGINX_PROXY_PORT:-8484}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]

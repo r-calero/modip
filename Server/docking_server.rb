@@ -219,7 +219,7 @@ Signal.trap("TERM") do
                  puts "Exiting"
                 end
 
-DRb.start_service('druby://localhost:1997', docking_server)
+DRb.start_service(ENV['MODIP_DOCKING_DRB_URI'] || 'druby://localhost:1997', docking_server)
 puts DRb.uri
 begin
   DRb.thread.join

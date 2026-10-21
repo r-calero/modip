@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# Health check for a MODIP DRb server: connects to the address in the given
+# environment variable (default MODIP_DRB_URI). Exit 0 when it answers.
+require 'uri'
+require 'socket'
+require 'timeout'
+
+uri = URI.parse(ENV.fetch(ARGV[0] || 'MODIP_DRB_URI'))
+Timeout.timeout(5) { TCPSocket.new(uri.host, uri.port).close }

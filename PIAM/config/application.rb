@@ -9,6 +9,8 @@ if defined?(Bundler)
   # Bundler.require(:default, :assets, Rails.env)
 end
 
+require File.expand_path('../../lib/sass_ruby2_compat', __FILE__)
+
 module PIAM
   class Application < Rails::Application
 
@@ -18,7 +20,9 @@ module PIAM
       require 'drb'
       require_relative '../lib/query manager/query_manager'
       require_relative '../lib/docking manager/docking_manager'
-      DRb.start_service
+      # MODIP_WEB_DRB_URI (e.g. druby://web:9100) is the address the other
+      # servers use to call back the observers; without it DRb picks one.
+      DRb.start_service(ENV['MODIP_WEB_DRB_URI'])
       QUERY_MANAGER = QueryManager.new
       DOCKING_MANAGER = DockingManager.new
     end
@@ -69,5 +73,9 @@ module PIAM
 
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
+
+    # Precompiling assets must not boot the app (it would connect to MySQL and
+    # to the DRb servers).
+    config.assets.initialize_on_precompile = false
   end
 end

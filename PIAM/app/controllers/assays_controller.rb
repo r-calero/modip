@@ -119,7 +119,7 @@ class AssaysController < ApplicationController
 		selection = assay.assay_compound.page(params[:page]).per(20)
 		count = assay.assay_compound.count
     end
-    selection.each do |a_c| #incorporar todos los readouts de assay_compound
+    selection.each do |a_c| # add all the readouts of assay_compound
        value = {:cid => a_c.compound.cid, :source => a_c.bio_assay_source,
                 :comment => a_c.comment, :score => a_c.score, :outcome => a_c.outcome}
        a_c.column_descriptions.where(:active_concentration => true).each do |column|
