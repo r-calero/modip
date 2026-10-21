@@ -1,3 +1,32 @@
-== DownloadEngine
+== DownloadEngine 2.0.0
 
-You should document your project here.
+Downloads PubChem assays and compounds for a query and stores them through
+the MODIP DataBaseServer.
+
+Since 2.0.0 PubChem is reached through PUG REST
+(https://pubchem.ncbi.nlm.nih.gov/rest/pug). PUG SOAP is no longer used.
+Assay search still uses NCBI E-utilities through the entrez gem.
+
+Public API, notifications, file layout and the enum constants
+(AssayOutcomeFilterType, FormatType, ...) are the same as in 1.x.
+
+Main files:
+  lib/download_engine.rb                     DownloadEngine (unchanged API)
+  lib/pubchem/service_rest.rb                ServiceRest (replaces ServiceSoap)
+  lib/pubchem/rest_client.rb                 HTTP client: proxy, retries, throttling
+  lib/pubchem/Assay/assay_table_normalizer.rb  REST CSV -> SOAP-compatible CSV
+  lib/pubchem/types.rb                       Enums and value types (no soap4r)
+
+Environment:
+  DOWNLOAD_ENGINE_SSL_VERIFY=false  skip TLS certificate checks (only for
+                                    servers with an outdated CA bundle)
+
+Build and install:
+  gem build download_engine.gemspec
+  gem install --local download_engine-2.0.0.gem
+
+Tests (offline):
+  ruby -Ilib -Itest -e 'Dir["test/**/*_test.rb"].each { |f| require "./" + f }'
+
+Live check against PubChem (needs network, honors MODIP_PROXY):
+  ruby -Ilib test/live_check.rb

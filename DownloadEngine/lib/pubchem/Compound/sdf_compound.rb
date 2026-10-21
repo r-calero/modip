@@ -37,6 +37,7 @@ class SDFCompound < CompoundFile
   @@iupac_inchikey = 'PUBCHEM_IUPAC_INCHIKEY'
   @@openeye_can_smiles = 'PUBCHEM_OPENEYE_CAN_SMILES'
   @@openeye_iso_smiles = 'PUBCHEM_OPENEYE_ISO_SMILES'
+  @@smiles = 'PUBCHEM_SMILES' # PubChem replaced PUBCHEM_OPENEYE_ISO_SMILES with this tag
   @@iupac_name = 'PUBCHEM_IUPAC_NAME'
   @@iupac_traditional_name = 'PUBCHEM_IUPAC_TRADITIONAL_NAME'
   @@iupac_systematic_name = 'PUBCHEM_IUPAC_SYSTEMATIC_NAME'
@@ -124,7 +125,12 @@ class SDFCompound < CompoundFile
   end
 
   def openeye_iso_smiles
-    @sdf[@@openeye_iso_smiles].gsub(/\s+$/,'') if @sdf[@@openeye_iso_smiles]
+    @sdf[smiles_tag].gsub(/\s+$/,'') if smiles_tag
+  end
+
+  # SDF tag that holds the isomeric SMILES, or nil
+  def smiles_tag
+    [@@openeye_iso_smiles, @@smiles].detect { |tag| @sdf[tag] }
   end
 
   def cactvs_tpsa
@@ -175,7 +181,7 @@ class SDFCompound < CompoundFile
     @sdf[@@iupac_inchi] = other.inner_data[@@iupac_inchi] if other.inchi
     @sdf[@@cactvs_hbond_acceptor] = other.inner_data[@@cactvs_hbond_acceptor] if other.cactvs_hbond_acceptor
     @sdf[@@cactvs_hbond_donor] = other.inner_data[@@cactvs_hbond_donor] if other.cactvs_hbond_donor
-    @sdf[@@openeye_iso_smiles] = other.inner_data[@@openeye_iso_smiles] if other.openeye_iso_smiles
+    @sdf[other.smiles_tag] = other.inner_data[other.smiles_tag] if other.openeye_iso_smiles
     @sdf[@@cactvs_tpsa] = other.inner_data[@@cactvs_tpsa] if other.cactvs_tpsa
     @sdf[@@cactvs_rotatable_bond] = other.inner_data[@@cactvs_rotatable_bond] if other.cactvs_rotatable_bond
 

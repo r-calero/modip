@@ -1,4 +1,4 @@
-require 'pubchem/service_soap'
+require 'pubchem/service_rest'
 require 'pubchem/Assay/table_info'
 require 'pubchem/Compound/sdf_compound'
 require 'pubchem/Substance/sdf_substance'
@@ -40,7 +40,7 @@ class DownloadEngine
     @assay_info = {:assayColumnType => AssayColumnsType::EAssayColumns_Concise, :listKeyTIDs =>'', :listKeySCIDs => '', :assayFormat => AssayFormatType::EAssayFormat_CSV, :compressType =>  CompressType::ECompress_None, :getVersion => true, :getCounts => true, :getFullDataBlog => false, :formatType => FormatType::EFormat_XML }
     @comp_info = {:format => FormatType::EFormat_SDF, :compress => CompressType::ECompress_None}
     @proxy = proxy
-    @service = ServiceSoap.new(@proxy)
+    @service = ServiceRest.new(@proxy)
     @running = false
     @pids = []
   end
@@ -132,8 +132,7 @@ class DownloadEngine
           next
         end
         begin
-          assay_url = @service.GetAssayUrl(aid, @assay_info[:assayColumnType], @assay_info[:assayFormat], @assay_info[:compressType], assay_filter)
-          table_info = get_table_info(assay_url, aid)
+          table_info = get_table_info(aid, assay_filter)
         rescue Exception => e
           leave_resource(:assay)
           notify(AssayNotificationClass.new(id, aid, "AssayFailed", "assay #{aid} download compound information error, details:\n#{e.message}"))
@@ -172,7 +171,6 @@ class DownloadEngine
 
           begin #descarga del compuesto en 3d
             cmp = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info), cid)
-            #cmp = get_compound(get_download_url(cid,@sdf_extension), cid+".#{@sdf_extension}") #REST interface
           rescue Exception => e
             cmp = nil
             notify(CompoundNotificationClass.new(id, cid, "CompoundWarning", "error downloading compound: #{cid} in 3d, details:\n#{e.message}"))
@@ -180,7 +178,6 @@ class DownloadEngine
 
           begin #descarga del compuesto en 2d
             cmp2d = get_compound(@service.GetSCIDUrl(@service.InputListText(cid), @comp_info, false), cid)
-            #cmp2d = get_compound(get_download_url(cid,@sdf_extension,false), cid+".#{@sdf_extension}") #REST interface
 
             if cmp == nil
               cmp = cmp2d
@@ -304,21 +301,19 @@ class DownloadEngine
     end
   end
 
-  def get_table_info(url, filename)
-    dir = File.join(@assays_root, filename + '.' + url.split('.').last)
-    #WebUtilities.FTPRequest(url, dir)
-    WebUtilities.HTTPRequest(url, dir, @proxy)
+  # Downloads the assay data table as <assays_root>/<aid>.csv
+  def get_table_info(aid, assay_filter = AssayOutcomeFilterType::EAssayOutcome_All)
+    dir = File.join(@assays_root, "#{aid}.csv")
+    @service.download_assay_table(aid, dir, assay_filter)
     TableInfo.new(dir)
   end
 
   def get_compound(url, filename)
-    filename = filename + '.' + url.split('.').last #comment this line on REST interface
+    filename = "#{filename}.#{@sdf_extension}"
     dir = File.join(Dir.tmpdir, filename)
-    #WebUtilities.FTPRequest(url, dir)
-    #puts "Downloading compound: #{filename} from: #{url}"
     logger.info("Downloading compound: #{filename} from: #{url}")
 
-    WebUtilities.HTTPRequest(url, dir, @proxy)
+    @service.download(url, dir)
     compound = nil
     case(@comp_info[:format])
       when FormatType::EFormat_SDF

@@ -4,3 +4,4 @@ Server/tmp/
 
 #MODIP gem
 *.gem
+.idea
