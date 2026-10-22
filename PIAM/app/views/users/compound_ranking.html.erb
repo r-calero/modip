@@ -16,7 +16,9 @@
         <div class="span3"><%= collection_select :filter, :filter_one, receptor_types, :id, :name, {:selected => first.to_s}, {:class => "filter"} %></div>
         <div class="span3"><%= collection_select :filter, :filter_two, receptor_types, :id, :name, {:selected => second.to_s}, {:class => "filter"} %></div>
         <div class="span3"><%= collection_select :filter, :filter_tree, receptor_types, :id, :name, {:selected => third.to_s}, {:class => "filter"} %></div>
-        <div class="span3"><%= submit_tag "Filter by", :class => 'btn' %></div>
+        <div class="span3"><%= submit_tag "Filter by", :class => 'btn' %>
+          <%= link_to 'Export CSV', compound_ranking_user_path(target.id, first, second, third, :format => :csv, :sort => params[:sort], :direction => params[:direction]), :class => 'btn' %>
+          <%= link_to 'Poses (.tar.gz)', poses_target_path(target), :class => 'btn' %></div>
        </div>
       <% end %>
     <% end %>

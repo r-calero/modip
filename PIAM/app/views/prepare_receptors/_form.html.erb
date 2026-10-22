@@ -20,7 +20,8 @@
             <%= f.label "upload receptor" %>
           </div>
           <div class="controls">
-            <%= f.file_field(:uploaded_receptor, :accept => '.pdbqt')%>
+            <%= f.file_field(:uploaded_receptor, :accept => '.pdbqt,.pdb')%>
+            <span class="help-block">A prepared .pdbqt, or a .pdb that MODIP prepares with AutoDockTools (polar hydrogens added).</span>
           </div>
         </div>
       </div>

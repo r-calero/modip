@@ -1,0 +1,15 @@
+Hello <%= @job.user.name %>,
+
+Your docking job #<%= @job.id %> on target "<%= @job.target.name %>" finished.
+<%= @job.message %>
+
+<% if @results.any? %>
+Best results (kcal/mol, lower is better):
+<% @results.each_with_index do |(cid, receptor, energy), i| %>
+<%= "%3d. CID %-12s %-25s %8.2f" % [i + 1, cid, receptor, energy] %>
+<% end %>
+<% else %>
+No poses were obtained for these compounds.
+<% end %>
+--
+MODIP

@@ -48,8 +48,10 @@ class DockingManager
 	@pids.delete(pid)
   end
 
-  def prepare_receptor(input, output)
-    `#@receptor_command -r #{input} -o #{output}`
+  # options: extra prepare_receptor4.py flags, e.g. "-A checkhydrogens".
+  def prepare_receptor(input, output, options = "")
+    require 'shellwords'
+    `#@receptor_command -r #{Shellwords.escape(input)} -o #{Shellwords.escape(output)} #{options}`
   end
 
   def prepare_ligand(input, output)

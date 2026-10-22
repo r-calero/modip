@@ -77,6 +77,20 @@ services:
       retries: 30
       start_period: 60s
 
+  # Applies pending database migrations (PIAM/db/migrate) and exits.
+  migrate:
+    <<: *ruby-service
+    restart: "no"
+    working_dir: /app/PIAM
+    command: ["bundle", "exec", "rake", "modip:migrate"]
+    environment:
+      <<: *ruby-env
+      RAILS_ENV: production
+      MODIP_NO_DRB: "true"
+      MODIP_SECRET_TOKEN: ${MODIP_SECRET_TOKEN}
+    depends_on:
+      mysql: { condition: service_healthy }
+
   # DataBaseServer (Server/database_server.rb): ActiveRecord access for the download engine.
   database:
     <<: *ruby-service
@@ -98,6 +112,7 @@ services:
       start_period: 20s
     depends_on:
       mysql: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
 
   # DownloadServer (Server/download_server.rb): PubChem downloads (DownloadEngine 2.x, PUG REST).
   download:
@@ -147,6 +162,7 @@ services:
       start_period: 20s
     depends_on:
       mysql: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
 
   # PIAM web application (Rails 3.2.8). Puma 1.6 runs one process with threads,
   # which DRb needs: the download/docking observers live in this process.
@@ -154,13 +170,15 @@ services:
     <<: *ruby-service
     hostname: web
     working_dir: /app/PIAM
-    command: ["bundle", "exec", "puma", "-e", "production", "-b", "tcp://0.0.0.0:${MODIP_WEB_PORT}", "-t", "${PUMA_MIN_THREADS}:${PUMA_MAX_THREADS}"]
+    command: ["bundle", "exec", "puma", "-C", "config/puma.rb"]
     environment:
       <<: *ruby-env
       RAILS_ENV: production
       RACK_ENV: production
       MODIP_DRB_URI: druby://web:${MODIP_WEB_DRB_PORT}
       MODIP_WEB_PORT: ${MODIP_WEB_PORT}
+      PUMA_MIN_THREADS: ${PUMA_MIN_THREADS}
+      PUMA_MAX_THREADS: ${PUMA_MAX_THREADS}
       MODIP_SECRET_TOKEN: ${MODIP_SECRET_TOKEN}
       MODIP_GUEST_MODE: ${MODIP_GUEST_MODE:-readonly}
       MODIP_ADMIN_USERS: ${MODIP_ADMIN_USERS:-}

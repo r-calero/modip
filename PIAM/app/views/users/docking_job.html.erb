@@ -1,0 +1,94 @@
+<div class="row-fluid">
+  <h3>Docking job #<%= @job.id %> <small><%= @job.target ? @job.target.name : '' %></small>
+    <span id="job-status"><%= docking_status_label(@job.status) %></span></h3>
+</div>
+
+<div class="row-fluid">
+  <div class="span8">
+    <div class="progress progress-striped <%= 'active' if @job.active? %>" id="job-progress">
+      <div class="bar" id="job-progress-bar" style="width: <%= @job.percent %>%;"></div>
+    </div>
+  </div>
+  <div class="span4">
+    <strong id="job-percent"><%= @job.percent %>%</strong> &middot;
+    <span id="job-processed"><%= @job.processed_compounds %></span> / <span id="job-total"><%= @job.total_compounds %></span> compounds
+    <span id="job-failed"><%= "(#{@job.failed_compounds} without poses)" if @job.failed_compounds > 0 %></span>
+  </div>
+</div>
+
+<div class="row-fluid">
+  <p>
+    <span id="job-current"><%= "Docking compound #{@job.current_cid}..." if @job.current_cid %></span>
+    <span id="job-message"><%= @job.message %></span>
+  </p>
+  <p id="job-actions">
+    <% if @job.active? %>
+      <%= button_to 'Cancel docking', cancel_docking_job_user_path(@user, @job), :class => 'btn btn-danger', :id => 'job-cancel',
+                    :form_class => 'docking-cancel', :confirm => 'Cancel this docking job?' %>
+    <% end %>
+    <% if @job.target %>
+      <%= link_to 'Ranking list', compound_rank_user_url(:target => { :target_id => @job.target_id }), :method => :post, :class => 'btn' %>
+      <%= link_to 'Download poses (.tar.gz)', poses_target_path(@job.target, :job_id => @job.id), :class => 'btn' %>
+    <% end %>
+    <%= link_to 'All my jobs', docking_jobs_user_path(@user), :class => 'btn btn-link' %>
+  </p>
+</div>
+
+<div class="row-fluid">
+  <table class="table table-condensed" id="job-log">
+    <thead><tr><th style="width: 15%;">CID</th><th style="width: 10%;">Poses</th><th>Result</th></tr></thead>
+    <tbody>
+      <% @job.docking_job_logs.each do |log| %>
+        <tr class="<%= log.success ? '' : 'error' %>">
+          <td><%= log.cid %></td><td><%= log.num_modes %></td><td><pre style="margin: 0;"><%= log.message %></pre></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<script type="text/javascript">
+  // Progress is read from the database every 2 seconds (see UsersController#docking_job).
+  $(function () {
+    var url = "<%= docking_job_user_path(@user, @job, :format => :json) %>";
+    var lastLog = <%= @job.docking_job_logs.last ? @job.docking_job_logs.last.id : 0 %>;
+    var labels = <%= raw DockingJobsHelper::STATUS_LABELS.to_json %>;
+    var active = <%= @job.active? ? 'true' : 'false' %>;
+
+    function cell(text, pre) {
+      var td = $("<td></td>");
+      if (pre) { td.append($("<pre style='margin: 0;'></pre>").text(text)); } else { td.text(text); }
+      return td;
+    }
+
+    function update(job) {
+      $("#job-progress-bar").css("width", job.percent + "%");
+      $("#job-percent").text(job.percent + "%");
+      $("#job-processed").text(job.processed);
+      $("#job-total").text(job.total);
+      $("#job-failed").text(job.failed > 0 ? "(" + job.failed + " without poses)" : "");
+      $("#job-current").text(job.current_cid ? "Docking compound " + job.current_cid + "..." : "");
+      $("#job-message").text(job.message || "");
+      $("#job-status .docking-status").text(job.status).attr("class", "label docking-status " + (labels[job.status] || ""));
+      $.each(job.logs, function (i, log) {
+        var row = $("<tr></tr>").toggleClass("error", !log.success);
+        row.append(cell(log.cid)).append(cell(log.num_modes)).append(cell(log.message, true));
+        $("#job-log tbody").append(row);
+        lastLog = log.id;
+      });
+      if (job.status !== "queued" && job.status !== "running") {
+        active = false;
+        $("#job-progress").removeClass("active");
+        $("form.docking-cancel").remove();
+      }
+    }
+
+    function poll() {
+      if (!active) { return; }
+      $.getJSON(url, { after: lastLog }).done(update).always(function () {
+        if (active) { setTimeout(poll, 2000); }
+      });
+    }
+    setTimeout(poll, 2000);
+  });
+</script>

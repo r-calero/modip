@@ -201,6 +201,37 @@ Para tareas sueltas dentro del contenedor web (consola, `rails runner`), usa
 docker compose exec -e MODIP_NO_DRB=true web bundle exec rails console production
 ```
 
+## Migraciones de la base de datos
+
+El servicio `migrate` aplica las migraciones pendientes (`PIAM/db/migrate`) en
+cada `docker compose up` y termina; `database`, `docking` y `web` esperan a que
+acabe. Sirve también para bases creadas desde el volcado SQL: las migraciones
+de 2013 se registran como ya aplicadas y solo se ejecutan las nuevas.
+```bash
+docker compose run --rm migrate      # aplicarlas a mano
+```
+
+## Trabajos de docking
+
+- Cada docking es un trabajo guardado en MySQL (`docking_jobs`, con un registro
+  por compuesto en `docking_job_logs`). El servidor de docking los ejecuta de
+  uno en uno, en orden de llegada.
+- La página del trabajo muestra el progreso, el compuesto en curso y el
+  registro, leyendo la base de datos cada 2 segundos. Se puede recargar o
+  cerrar sin perder nada. *Docking → My jobs* lista todos los trabajos.
+- **Cancelar** detiene el Vina en curso y no procesa más compuestos.
+- Si el servidor de docking se reinicia, los trabajos en curso se retoman desde
+  el primer compuesto pendiente.
+- Al terminar, el usuario recibe un correo con los mejores resultados (si el
+  SMTP funciona). Tras una descarga, los compuestos nuevos se encolan solos si
+  la diana tiene receptores.
+- El panel *Admin* muestra el resumen del sistema, los usuarios (se pueden
+  borrar) y los trabajos de todos (se pueden cancelar).
+- Exportaciones: el ranking en CSV y las poses en `.tar.gz` (de un trabajo o de
+  toda la diana).
+- Los receptores se pueden subir ya preparados (`.pdbqt`) o como `.pdb`: MODIP
+  los prepara con AutoDockTools y añade los hidrógenos polares.
+
 ## Notas
 
 - La web corre en un único proceso Puma con hilos (`PUMA_MIN_THREADS`/

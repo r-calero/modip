@@ -71,6 +71,9 @@
              <% if current_user && current_user.name != User::DefaultUser %>
                 <li><%= link_to 'Edit', edit_user_path(current_user) %> </li>
              <% end %>
+             <% if admin? %>
+                <li><%= link_to 'Admin', admin_path %> </li>
+             <% end %>
             <li class="divider"></li>
             <li class="nav-header">Resources</li>
             <li><%= link_to 'Cycles', cycles_path %></li>
@@ -93,6 +96,7 @@
             <li class="nav-header"> Docking</li>
             <% if registered_user %>
                 <li><%= link_to 'New', docking_user_path(registered_user) %></li>
+                <li><%= link_to 'My jobs', docking_jobs_user_path(registered_user) %></li>
             <% end %>
             <li><%= link_to "Ranking List", compound_rank_user_url, :method => :post%></li>
           </ul>

@@ -131,27 +131,15 @@ class DownloadObserver < UserObserver
 
   end
 
+  # After a download, the compounds it inserted are docked against every
+  # receptor of the query target; the owner gets an e-mail when it finishes.
   def send_notification()
-   if @compound_inserted.size > 0
-  	query = Query.find(@id)
-  	target = query.target
-  	# calculate docking ranking
-  	Thread.new do
-  	  docking_server = PIAM::Application::DOCKING_MANAGER
-  	  ((@compound_inserted.size / 50) + 1).times do |i|
-  		  cids = @compound_inserted[i * 50..((i+1)*50 - 1)]
-  		  #compounds = Compound.find_all_by_cid(cids)
-  		  docking_server.start_background_docking(query.user.id, target.id, cids)
-  	  end
-  	  order_hash = {}
-  	  Compound.sort_by_energy_range(target, 3, 1, 2).each_with_index do |item, index|
-  		  order_hash[index + 1] = item if @compound_inserted.include?(item[0])
-  	  end
-  	  Notifier.docking_compound(query.user.emails, order_hash, query.query, 3, 2, 1).deliver
-  	end
-
-   end
-
+    return if @compound_inserted.empty?
+    query = Query.find_by_id(@id)
+    return unless query && query.target && query.user && query.target.prepare_receptors.exists?
+    PIAM::Application::DOCKING_MANAGER.enqueue(query.user, query.target, @compound_inserted, true)
+  rescue StandardError => e
+    Rails.logger.error("[download] could not queue the docking of query #{@id}: #{e.class}: #{e.message}")
   end
 
   private

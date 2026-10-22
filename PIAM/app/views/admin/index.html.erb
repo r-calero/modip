@@ -1,2 +1,71 @@
-<h1>Admin#index</h1>
-<p>Find me in app/views/admin/index.html.erb</p>
+<h3>Administration</h3>
+<% if notice %><div class="alert alert-info"><%= notice %></div><% end %>
+
+<div class="row-fluid">
+  <% @counts.each do |label, value| %>
+    <div class="span1" style="min-width: 110px; text-align: center;">
+      <div style="font-size: 22px; font-weight: bold;"><%= value %></div>
+      <div class="muted"><%= label %></div>
+    </div>
+  <% end %>
+</div>
+<p class="muted" style="margin-top: 10px;">
+  Administrators: <%= User.admin_names.empty? ? 'every registered user (MODIP_ADMIN_USERS is empty)' : User.admin_names.join(', ') %>
+</p>
+
+<h4>Docking jobs in progress</h4>
+<% if @active_jobs.empty? %>
+  <p class="muted">No docking jobs queued or running.</p>
+<% else %>
+  <table class="table table-condensed">
+    <thead><tr><th>#</th><th>User</th><th>Target</th><th>Status</th><th>Progress</th><th></th></tr></thead>
+    <tbody>
+      <% @active_jobs.each do |job| %>
+        <tr>
+          <td><%= job.id %></td><td><%= job.user.try(:name) %></td><td><%= job.target.try(:name) %></td>
+          <td><%= docking_status_label(job.status) %></td>
+          <td><%= job.processed_compounds %> / <%= job.total_compounds %> (<%= job.percent %>%)</td>
+          <td><%= button_to 'Cancel', admin_cancel_docking_job_path(job), :class => 'btn btn-mini btn-danger', :confirm => "Cancel job ##{job.id}?" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<h4>Recent docking jobs</h4>
+<table class="table table-condensed">
+  <thead><tr><th>#</th><th>User</th><th>Target</th><th>Status</th><th>Compounds</th><th>Finished</th></tr></thead>
+  <tbody>
+    <% @recent_jobs.each do |job| %>
+      <tr>
+        <td><%= job.id %></td><td><%= job.user.try(:name) %></td><td><%= job.target.try(:name) %></td>
+        <td><%= docking_status_label(job.status) %></td>
+        <td><%= job.processed_compounds %> / <%= job.total_compounds %></td>
+        <td><%= job.finished_at ? job.finished_at.strftime('%Y-%m-%d %H:%M') : '-' %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h4>Users</h4>
+<table class="table table-condensed table-striped">
+  <thead><tr><th>Name</th><th>E-mail</th><th>Role</th><th>Queries</th><th>Docking jobs</th><th></th></tr></thead>
+  <tbody>
+    <% @users.each do |user| %>
+      <tr>
+        <td><%= user.name %></td>
+        <td><%= user.email %></td>
+        <td><%= user.name == User::DefaultUser ? 'shared guest account' : (User.admin?(user) ? 'admin' : 'user') %></td>
+        <td><%= @queries[user.id] || 0 %></td>
+        <td><%= @jobs[user.id] || 0 %></td>
+        <td>
+          <% unless user.id == registered_user.id || user.name == User::DefaultUser %>
+            <%= button_to 'Delete', admin_destroy_user_path(user), :method => :delete, :class => 'btn btn-mini btn-danger',
+                          :confirm => "Delete user #{user.name} and all their queries and docking jobs?" %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<%= paginate @users %>

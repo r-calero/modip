@@ -19,7 +19,15 @@ class PrepareReceptor < ActiveRecord::Base
 
   def set_receptor_file
     if(@receptor_file)
-      self.receptor = PIAM::Application::DOCKING_MANAGER.upload_file(target.name, File.basename(@receptor_file.original_filename), @receptor_file.read)
+      filename = File.basename(@receptor_file.original_filename.to_s)
+      unless filename =~ /\.(pdbqt|pdb)\z/i
+        errors.add(:uploaded_receptor, "must be a .pdbqt file, or a .pdb file to be prepared with AutoDockTools")
+        return false
+      end
+      path = PIAM::Application::DOCKING_MANAGER.upload_file(target.name, filename, @receptor_file.read)
+      # A PDB is converted to PDBQT on the docking server (polar hydrogens added).
+      path = PIAM::Application::DOCKING_MANAGER.prepare_receptor_file(path) if filename =~ /\.pdb\z/i
+      self.receptor = path
     else
       errors.add(:uploaded_receptor, "is a required field, you must select a receptor file")
       return false;

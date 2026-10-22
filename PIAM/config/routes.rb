@@ -9,6 +9,8 @@ PIAM::Application.routes.draw do
   #---------------------- login routes ----------------------------------------------------------------------
 
   get 'admin' => 'admin#index'
+  delete 'admin/users/:id' => 'admin#destroy_user', :as => :admin_destroy_user
+  post 'admin/docking_jobs/:id/cancel' => 'admin#cancel_docking_job', :as => :admin_cancel_docking_job
 
   controller :sessions do
     get 'login' => :new
@@ -17,6 +19,9 @@ PIAM::Application.routes.draw do
   end
 
   resources :targets, :except => [:update, :edit] do
+    member do
+      get 'poses'
+    end
     resources :prepare_receptors 
   end
   
@@ -66,10 +71,11 @@ PIAM::Application.routes.draw do
 
   controller :users do
     get 'users/:id/docking' => :docking, :as => :docking_user
-    get 'users/:id/docking/:target_id/docking_notification' => :docking_notification, :as => :docking_notification_user
     get 'users/:id/docking/:target_id/docking_progress' => :docking_progress, :as => :docking_progress_user
     get 'users/:target_id/compound_ranking/filter_one/:filter_one/filter_two/:filter_two/filter_tree/:filter_tree' => :compound_ranking, :as => :compound_ranking_user
-    post 'user/:id/docking/:target_id/stop' => :stop_docking, :as => :stop_docking_user
+    get 'users/:id/docking_jobs' => :docking_jobs, :as => :docking_jobs_user
+    get 'users/:id/docking_jobs/:job_id' => :docking_job, :as => :docking_job_user
+    post 'users/:id/docking_jobs/:job_id/cancel' => :cancel_docking_job, :as => :cancel_docking_job_user
     post 'users/compound_rank' => :compound_rank, :as => :compound_rank_user
     post 'users/:id/start_docking' => :start_docking, :as => :start_docking_user
     post 'users/:target_id/:cid/:receptor/download_conformer' => :download_conformer, :as => :download_conformer_user

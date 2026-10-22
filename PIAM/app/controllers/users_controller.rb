@@ -13,7 +13,7 @@ class UsersController < ApplicationController
   # account and docking pages are only for their owner.
   skip_before_filter :authorize , :only => [:new, :create, :confirm, :compound_ranking, :compound_rank, :download_conformer]
   before_filter :check_account_owner, :only => [:show, :edit, :update, :destroy, :docking, :start_docking,
-                                                :stop_docking, :docking_progress, :docking_notification]
+                                                :docking_jobs, :docking_job, :cancel_docking_job, :docking_progress]
   before_filter :protect_default_account, :only => [:edit, :update, :destroy]
 
   # GET /users/1
@@ -153,70 +153,52 @@ class UsersController < ApplicationController
     end
   end
 
-  #POST /users/1/start_docking
+  # POST /users/1/start_docking
+  # Queues a docking job (run by the docking server, see Server/docking_queue.rb).
   def start_docking
     @user = User.find(params[:id])
-    @target = Target.find(params[:target][:target_id]) 
-    compound_docking = {}
-    info = params[:cids]
-    if info == "all"
-		compound_docking[:all] = true
-		compound_docking[:total] = Compound.count
-	else
-		pages, cids = info.split(";")
-		page_arr = pages.split(":")
-		compound_docking[:pages] = page_arr[1..page_arr.length]
-		cid_arr = cids.split(":")
-		compound_docking[:cids] = cid_arr[1..cid_arr.length]
-		compound_docking[:total] = compound_docking[:cids].length + compound_docking[:pages].length * 50
-		puts compound_docking[:total]
+    @target = Target.find(params[:target][:target_id])
+    cids = selected_cids(params[:cids].to_s)
+    if cids.empty?
+      return redirect_to(docking_user_url(@user), :notice => "Select at least one compound")
     end
-    PIAM::Application::DOCKING_MANAGER.start_docking(@user.id, @target, compound_docking)
-    respond_to do |format|
-      format.html {redirect_to docking_progress_user_url(@user, @target)}
-    end
+    job = PIAM::Application::DOCKING_MANAGER.enqueue(@user, @target, cids, @user.name != User::DefaultUser)
+    redirect_to docking_job_user_url(@user, job)
   end
-  
-  #GET /users/1/docking/2/stop
-  def stop_docking
-    @user = params[:id].to_i
-    @target = params[:target_id].to_i
-    files = PIAM::Application::DOCKING_MANAGER.stop_docking(@user, @target)
-    ReceptorCompound.delete_all(["path in (?)", files]) if files.size > 0
+
+  # GET /users/1/docking_jobs
+  def docking_jobs
+    @user = User.find(params[:id])
+    @jobs = DockingJob.where(:user_id => @user.id).includes(:target).recent.page(params[:page]).per(20)
+  end
+
+  # GET /users/1/docking_jobs/5(.json)
+  # The page polls the JSON (progress and new log lines) every few seconds.
+  def docking_job
+    @user = User.find(params[:id])
+    @job = DockingJob.where(:user_id => @user.id).find(params[:job_id])
     respond_to do |format|
-    	format.html { redirect_to docking_user_url(@user) }
-    	format.js
+      format.html
+      format.json { render :json => @job.progress(params[:after]) }
     end
   end
 
-  #GET /users/1/docking/2/docking_progress
+  # POST /users/1/docking_jobs/5/cancel
+  def cancel_docking_job
+    @user = User.find(params[:id])
+    @job = DockingJob.where(:user_id => @user.id).find(params[:job_id])
+    PIAM::Application::DOCKING_MANAGER.cancel(@job)
+    respond_to do |format|
+      format.html { redirect_to docking_job_user_url(@user, @job) }
+      format.json { render :json => @job.reload.progress(params[:after]) }
+    end
+  end
+
+  # GET /users/1/docking/2/docking_progress (old links): latest job of that target.
   def docking_progress
-    @user = params[:id].to_i
-    @target = Target.find(params[:target_id])
-    if (running = PIAM::Application::DOCKING_MANAGER.is_docking(@user, @target.id))
-     progress, total = PIAM::Application::DOCKING_MANAGER.get_process(@user, @target.id)
-    end
-    respond_to do |format|
-      format.html {render :locals => {:progress => progress, :total => total, :running => running}}
-    end
-
-  end
-
-  #GET users/1/docking/2/docking_notificationge
-
-  def docking_notification
-    if request.headers['accept'] == 'text/event-stream'
-      response.headers['Content-Type'] = 'text/event-stream'
-      if request.headers['x-requested-with'] == 'XMLHttpRequest'
-        response.xhr = nil
-      end
-      last_event_id = request.headers['last-event-id'] ? request.headers['last-event-id'].to_i : -1
-      data = PIAM::Application::DOCKING_MANAGER.get_notification(params[:id], params[:target_id], last_event_id)
-      puts data
-      render :text => data
-    else
-      render :action => 'not_support_error'
-    end
+    @user = User.find(params[:id])
+    job = DockingJob.where(:user_id => @user.id, :target_id => params[:target_id]).recent.first
+    redirect_to(job ? docking_job_user_url(@user, job) : docking_jobs_user_url(@user))
   end
 
   # GET /users/compound_ranking/filter_one/1/filter_two/2/filter_tree/3
@@ -237,6 +219,11 @@ class UsersController < ApplicationController
     respond_to do |format|
       format.html {render :locals => locals} #compound_ranking.html.erb
       format.js {render :locals => locals} 
+      format.csv do
+        rows = target ? Compound.sort_by_energy_range(target, filter_one, filter_two, filter_tree, sort_column, sort_direction) : []
+        send_data(ranking_csv(rows, [filter_one, filter_two, filter_tree]), :type => 'text/csv',
+                  :filename => "ranking_#{target ? target.name.gsub(/[^A-Za-z0-9_.\-]+/, '_') : 'empty'}.csv")
+      end
     end
 
   end
@@ -265,6 +252,32 @@ class UsersController < ApplicationController
   end
   
   private
+
+  # Ranking as CSV: rank, CID and the best energy for each receptor type.
+  def ranking_csv(rows, filters)
+    require 'csv'
+    names = filters.map { |id| (type = ReceptorType.find_by_id(id)) ? type.name : "Receptor #{id}" }
+    CSV.generate do |csv|
+      csv << ['rank', 'cid'] + names.map { |n| "#{n} (kcal/mol)" }
+      rows.each_with_index do |(cid, values), index|
+        csv << [index + 1, cid] + filters.map { |f| values[f] ? values[f][0] : nil }
+      end
+    end
+  end
+
+  # Compound ids selected in the docking page (built by users.js):
+  # "all", or "pages;cids" where each part starts with a label that is
+  # ignored, e.g. "p:2:5;c:2244:3672" (pages of 50 3D compounds, then CIDs).
+  def selected_cids(info)
+    ordered = Compound._3d.order('cid+0')
+    return ordered.pluck(:cid) if info == 'all'
+    pages, cids = info.split(';', 2)
+    list = cids.to_s.split(':').drop(1).map { |c| c.strip }.reject { |c| c.empty? }
+    pages.to_s.split(':').drop(1).map { |p| p.to_i }.select { |p| p > 0 }.each do |page|
+      list.concat(ordered.page(page).per(50).pluck(:cid))
+    end
+    list.uniq
+  end
 
   # The account data travels signed inside the link, so nothing is stored
   # until the user confirms.

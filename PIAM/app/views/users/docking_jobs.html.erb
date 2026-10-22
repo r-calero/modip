@@ -1,0 +1,26 @@
+<h3>My docking jobs</h3>
+<% if @jobs.empty? %>
+  <p>You have no docking jobs yet. <%= link_to 'Start a docking', docking_user_path(@user) %>.</p>
+<% else %>
+  <table class="table table-condensed table-striped">
+    <thead>
+      <tr><th>#</th><th>Target</th><th>Status</th><th style="width: 30%;">Progress</th><th>Compounds</th><th>Created</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% @jobs.each do |job| %>
+        <tr>
+          <td><%= job.id %></td>
+          <td><%= job.target ? job.target.name : '-' %></td>
+          <td><%= docking_status_label(job.status) %></td>
+          <td>
+            <div class="progress" style="margin-bottom: 0;"><div class="bar" style="width: <%= job.percent %>%;"></div></div>
+          </td>
+          <td><%= job.processed_compounds %> / <%= job.total_compounds %><%= " (#{job.failed_compounds} failed)" if job.failed_compounds > 0 %></td>
+          <td><%= job.created_at.strftime('%Y-%m-%d %H:%M') %></td>
+          <td><%= link_to 'Details', docking_job_user_path(@user, job) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%= paginate @jobs %>
+<% end %>

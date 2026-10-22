@@ -20,6 +20,12 @@ class Notifier < ActionMailer::Base
     mail :to => email, :subject => 'MODIP: confirm your account'
   end
 
+  # results: [[cid, receptor type, best energy], ...]
+  def docking_job_finished(job, results)
+    @job, @results = job, results
+    mail :to => job.user.email, :subject => "MODIP: docking job ##{job.id} finished (#{job.target.name})"
+  end
+
   def password_reset(email, name, link)
     @name, @link = name, link
     mail :to => email, :subject => 'MODIP: choose a new password'

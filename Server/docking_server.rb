@@ -1,5 +1,9 @@
 require_relative 'schema'
 require_relative 'drb_acl'
+require_relative 'docking_queue'
+require 'zlib'
+require 'stringio'
+require 'rubygems/package'
 require 'docking'
 require 'drb'
 require 'drb/observer'
@@ -8,10 +12,66 @@ require 'tmpdir'
 class DockingServer
   include DRb::DRbObservable
 
+  attr_accessor :queue
+
   def initialize(target_root)
     @target_root = target_root
     @docking = DockingManager.new
     @running_docking = {}
+  end
+
+  # ---- docking jobs (see docking_queue.rb) ----
+
+  # Asks the queue to stop the compound being docked for a cancelled job.
+  def cancel_job(job_id)
+    @queue.cancel(job_id) if @queue
+    true
+  end
+
+  # Bookkeeping of temporary/output files of a running docking (used by make_docking).
+  def prepare_key(key)
+    @cancel_requested = false
+    @running_docking[key] ||= [[], nil]
+  end
+
+  def forget_files(key)
+    @running_docking.delete(key)
+  end
+
+  # Stops the Open Babel / AutoDockTools / Vina processes in progress.
+  def kill_running_processes
+    @cancel_requested = true
+    @docking.wait_process_finish
+  end
+
+  # ---- receptors and results ----
+
+  # Converts an uploaded receptor PDB (inside data/Targets) to PDBQT with
+  # AutoDockTools and returns the PDBQT path.
+  def prepare_receptor_file(pdb_path)
+    input = inside_target_root!(pdb_path)
+    output = input.sub(/\.pdb\z/i, '') + '.pdbqt'
+    inside_target_root!(output)
+    # Adds polar hydrogens when the PDB has none (needed by Vina).
+    @docking.prepare_receptor(input, output, "-A checkhydrogens")
+    raise "AutoDockTools could not prepare the receptor #{File.basename(input)}" unless File.size?(output)
+    pdb_path.sub(/\.pdb\z/i, '') + '.pdbqt'
+  end
+
+  # .tar.gz (as a String) with the given docking result files (inside data/Targets).
+  def archive_files(paths, folder_name = 'poses')
+    io = StringIO.new
+    gzip = Zlib::GzipWriter.new(io)
+    Gem::Package::TarWriter.new(gzip) do |tar|
+      paths.uniq.each do |path|
+        full = inside_target_root!(path)
+        next unless File.file?(full)
+        data = File.open(full, 'rb') { |f| f.read }
+        tar.add_file_simple("#{safe_name(folder_name)}/#{File.basename(full)}", 0644, data.bytesize) { |f| f.write(data) }
+      end
+    end
+    gzip.close
+    io.string
   end
 
   def is_docking(key)
@@ -83,6 +143,7 @@ class DockingServer
     if compound.coordinate =~ /3D/i
       sdf_dir = compound.path
       target.prepare_receptors.each do |receptor|
+        raise "Docking cancelled" if @cancel_requested
         message += receptor.receptor_type.name + "\n"
         params = {:center_x => receptor.center_x, :center_y => receptor.center_y, :center_z =>    receptor.center_z, :size_x => receptor.size_x, :size_y => receptor.size_y, :size_z => receptor.size_z,
                   :out => "#{target.root}/output/#{get_file_name(code, target.name, receptor.receptor_type.name, compound.cid)}.#{DockingManager.format_type[:pdbqt]}"}
@@ -237,6 +298,7 @@ Dir.mkdir(target) unless File.exist?(target)
 
 ModipDrbAcl.install
 docking_server = DockingServer.new(target)
+docking_server.queue = DockingQueue.new(docking_server).start
 Signal.trap("TERM") do
                  puts 'Stopping ...'
                  docking_server.stop()

@@ -1,80 +1,78 @@
 require "drb"
-require_relative 'docking_observer'
-require_relative '../notification/notification_manager'
+require 'rufus/scheduler'
 
-class DockingManager < NotificationManager
+# Web side of the docking server (Server/docking_server.rb, reached via DRb).
+#
+# Docking requests are stored as DockingJob rows and run by the docking
+# server queue; this class only enqueues/cancels them, sends the e-mails of
+# finished jobs and forwards file operations (targets, receptors, results).
+class DockingManager
 
   def initialize()
     @server = DRbObject.new(nil, ENV['MODIP_DOCKING_DRB_URI'] || "druby://localhost:1997")
-    @observer = {}
-    #super()
+    @scheduler = Rufus::Scheduler.start_new
+    @scheduler.every('1m') { send_finished_job_emails }
   end
 
-  def get_notification(user_id, target_id, last_event_id)
-    channel = make_key(user_id, target_id)
-    observer = @observer[channel]
-    checkout_notification(observer, channel, last_event_id)
+  # ---- docking jobs ----
+
+  def enqueue(user, target, cids, notify_by_email = false)
+    DockingJob.enqueue(user, target, cids, notify_by_email)
   end
 
-  def is_docking(user_id, target_id)
-    channel = make_key(user_id, target_id)
-    @server.is_docking(channel)
-
+  def cancel(job)
+    cancelled = job.cancel!
+    begin
+      @server.cancel_job(job.id) if cancelled
+    rescue DRb::DRbError => e
+      Rails.logger.warn("[docking] could not reach the docking server to stop job #{job.id}: #{e.message}")
+    end
+    cancelled
   end
 
-  def get_process(user_id, target_id)
-    channel = make_key(user_id, target_id)
-    observer = @observer[channel]
-    [observer.process, observer.total]
-  end
-
-  def start_docking(user_id, target, compound_docking)
-  	#DRb.start_service
-    key = make_key(user_id, target.id)
-    observer = DockingObserver.new(key, @server, compound_docking[:total])
-    observer.start()
-    @observer[key] = observer
-    Thread.new do
-        if compound_docking[:all]
-    			pages = compound_docking[:total] / 50
-    			pages.times do |page|
-    				compounds = Compound.page(page).per(50)
-    				@server.start_docking(key, target.id, compounds.map{|c| c.cid}, true)
-    			end
-        else
-    			compound_docking[:pages].each do |page|
-    				compounds = Compound._3d.order("cid+0").page(page.to_i - 1).per(50)
-    				@server.start_docking(key, target.id, compounds.map{|c| c.cid}, true)
-    			end
-    			iterations = (compound_docking[:cids].length / 50) + 1
-
-    			iterations.times do |i|
-    				#compounds = Compound.find_all_by_cid(compound_docking[:cids][(i * 50)..(i+1)*50 -1])
-    				@server.start_docking(key, target.id, compound_docking[:cids][(i * 50)..(i+1)*50 -1], true)
-    			end
-		end
+  # E-mail with the best results of each finished job that asked for it.
+  def send_finished_job_emails
+    ActiveRecord::Base.connection_pool.with_connection do
+      DockingJob.where(:status => 'finished', :notify_by_email => true, :notified_at => nil).includes(:user, :target).each do |job|
+        begin
+          Notifier.docking_job_finished(job, best_results(job)).deliver if job.user && job.user.name != User::DefaultUser
+        rescue StandardError, Timeout::Error => e
+          Rails.logger.error("[docking] could not send the e-mail of job #{job.id}: #{e.class}: #{e.message}")
+        ensure
+          DockingJob.where(:id => job.id).update_all(:notified_at => Time.now)
+        end
+      end
     end
   end
 
-  def start_background_docking(user_id, target, compounds)
-	#DRb.start_service
-	key = make_key(user_id, target.id)
-	@server.start_docking(key, target.id, compounds.map{|c| c.cid}, true)
+  # [[cid, receptor type, best energy], ...] of a job, best first.
+  def best_results(job, limit = 20)
+    ReceptorCompound.joins(:compound, :prepare_receptor => :receptor_type).
+      where('compounds.cid' => job.cid_list, 'prepare_receptors.target_id' => job.target_id).
+      group('compounds.cid, receptor_types.name').
+      select('compounds.cid AS cid, receptor_types.name AS receptor, MIN(receptor_compounds.value) AS best').
+      order('best').limit(limit).
+      map { |r| [r.cid, r.receptor, r.best.to_f] }
+  rescue StandardError
+    []
   end
 
-  def stop_docking(user_id, target_id)
-  	key = make_key(user_id, target_id)
-  	observer = @observer[key]
-  	observer.stop()
-  	@server.stop_docking(key)
-  end
+  # ---- files on the docking server ----
 
   def get_resource(resource)
-	@server.get_resource(resource)
+    @server.get_resource(resource)
   end
 
   def upload_file(target, file, data)
     @server.upload_file(target, file, data)
+  end
+
+  def prepare_receptor_file(pdb_path)
+    @server.prepare_receptor_file(pdb_path)
+  end
+
+  def archive_files(paths, folder_name)
+    @server.archive_files(paths, folder_name)
   end
 
   def create_target_dir(target_name)
@@ -88,14 +86,6 @@ class DockingManager < NotificationManager
       @server.delete_receptor(path) if path
     end
     @server.delete_receptor(receptor_path)
-  end
-
-  def make_key(*args)
-    result  = ""
-    args.each do |arg|
-      result += "#{arg}"
-    end
-    result
   end
 
 end
