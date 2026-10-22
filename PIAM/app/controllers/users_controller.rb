@@ -1,7 +1,17 @@
 class UsersController < ApplicationController
+  include FormProtection
+
+  SIGNUP_TOKEN_TTL = 2 * 24 * 3600 # seconds
+
+  # MODIP_REQUIRE_EMAIL_CONFIRMATION=true: accounts are created only after
+  # the user opens the link sent by e-mail (needs a working SMTP account).
+  def self.email_confirmation_required?
+    ENV['MODIP_REQUIRE_EMAIL_CONFIRMATION'] == 'true'
+  end
+
   # Registration and the public docking results are open to guests; the
   # account and docking pages are only for their owner.
-  skip_before_filter :authorize , :only => [:new, :create, :compound_ranking, :compound_rank, :download_conformer]
+  skip_before_filter :authorize , :only => [:new, :create, :confirm, :compound_ranking, :compound_rank, :download_conformer]
   before_filter :check_account_owner, :only => [:show, :edit, :update, :destroy, :docking, :start_docking,
                                                 :stop_docking, :docking_progress, :docking_notification]
   before_filter :protect_default_account, :only => [:edit, :update, :destroy]
@@ -37,26 +47,64 @@ class UsersController < ApplicationController
   # POST /users.json
   def create
     @user = User.new(params[:user])
+    unless human_form_submission?
+      @user.valid?
+      @user.errors.add(:base, "Please complete the verification and try again")
+      return render(:action => "new")
+    end
 
-    respond_to do |format|
-      if @user.save
-        # There is no users index (see routes), so go to the login page.
-        format.html { redirect_to(login_url, :notice => "User #{@user.name} was successfully created. Please log in.") }
-        format.json { render :json => @user, :status => :created, :location => @user }
-      else
+    unless @user.valid?
+      return respond_to do |format|
         format.html { render :action => "new" }
         format.json { render :json => @user.errors, :status => :unprocessable_entity }
       end
     end
+
+    if self.class.email_confirmation_required?
+      send_confirmation_email(@user)
+    else
+      @user.save!
+      # There is no users index (see routes), so go to the login page.
+      respond_to do |format|
+        format.html { redirect_to(login_url, :notice => "User #{@user.name} was successfully created. Please log in.") }
+        format.json { render :json => @user, :status => :created, :location => @user }
+      end
+    end
+  end
+
+  # GET /users/confirm?token=...
+  # Creates the account sent by e-mail (see send_confirmation_email).
+  def confirm
+    data = SignedToken.verify('signup', params[:token])
+    unless data
+      return redirect_to(new_user_url, :notice => "The confirmation link is invalid or has expired. Please register again.")
+    end
+    if User.exists?(:name => data['name'])
+      return redirect_to(login_url, :notice => "The account #{data['name']} already exists. Please log in.")
+    end
+    user = User.new
+    %w(name email first_lastname second_lastname hashed_password salt).each do |field|
+      user.send("#{field}=", data[field])
+    end
+    user.save(:validate => false)
+    redirect_to login_url, :notice => "Your account #{user.name} is confirmed. Please log in."
   end
 
   # PUT /users/1
   # PUT /users/1.json
   def update
     @user = User.find(params[:id])
+    attributes = params[:user] || {}
+    sensitive = attributes[:password].present? || (attributes[:email].present? && attributes[:email] != @user.email)
+    # Changing the password or the e-mail needs the current password (admins
+    # editing someone else's account do not know it).
+    if sensitive && registered_user && registered_user.id == @user.id && !User.authenticate(@user.name, params[:current_password])
+      @user.errors.add(:base, "The current password is not correct")
+      return render(:action => "edit")
+    end
 
     respond_to do |format|
-      if @user.update_attributes(params[:user])
+      if @user.update_attributes(attributes)
         format.html { redirect_to(home_path)}#redirect_to(users_url , :notice => "User #{@user.name} was successfully updated.") }
         format.json { head :no_content }
       else
@@ -217,6 +265,22 @@ class UsersController < ApplicationController
   end
   
   private
+
+  # The account data travels signed inside the link, so nothing is stored
+  # until the user confirms.
+  def send_confirmation_email(user)
+    data = {}
+    %w(name email first_lastname second_lastname hashed_password salt).each { |f| data[f] = user.send(f) }
+    link = confirm_users_url(:token => SignedToken.generate('signup', data, SIGNUP_TOKEN_TTL))
+    begin
+      Notifier.confirm_account(user.email, user.name, link).deliver
+    rescue StandardError, Timeout::Error => e
+      logger.error("[signup] could not send the confirmation e-mail to #{user.email}: #{e.class}: #{e.message}")
+      user.errors.add(:base, "We could not send the confirmation e-mail. Please try again later.")
+      return render(:action => "new")
+    end
+    redirect_to login_url, :notice => "We sent a confirmation link to #{user.email}. Open it within 2 days to activate your account."
+  end
 
   def check_account_owner
     require_same_user(params[:id])

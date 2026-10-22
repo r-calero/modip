@@ -1,4 +1,5 @@
 require_relative 'schema'
+require_relative 'drb_acl'
 require 'drb'
 require 'monitor'
 require 'date'
@@ -218,6 +219,7 @@ class DataBaseServer < Monitor
 
 end
 
+ModipDrbAcl.install
 database_server = DataBaseServer.new
 Signal.trap("TERM") do
                  puts 'Stopping ...'

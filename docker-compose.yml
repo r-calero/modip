@@ -30,6 +30,8 @@ x-ruby-env: &ruby-env
   MODIP_DOWNLOAD_DRB_URI: druby://download:${MODIP_DOWNLOAD_DRB_PORT}
   MODIP_DOCKING_DRB_URI: druby://docking:${MODIP_DOCKING_DRB_PORT}
   MODIP_WEB_DRB_URI: druby://web:${MODIP_WEB_DRB_PORT}
+  # Networks allowed to connect to the DRb servers (default: private ranges).
+  MODIP_DRB_ALLOW: ${MODIP_DRB_ALLOW:-}
 
 x-ruby-service: &ruby-service
   image: ${MODIP_IMAGE_PREFIX}/app:${MODIP_IMAGE_TAG}
@@ -162,6 +164,12 @@ services:
       MODIP_SECRET_TOKEN: ${MODIP_SECRET_TOKEN}
       MODIP_GUEST_MODE: ${MODIP_GUEST_MODE:-readonly}
       MODIP_ADMIN_USERS: ${MODIP_ADMIN_USERS:-}
+      MODIP_CAPTCHA_SITE_KEY: ${MODIP_CAPTCHA_SITE_KEY:-}
+      MODIP_CAPTCHA_SECRET: ${MODIP_CAPTCHA_SECRET:-}
+      MODIP_REQUIRE_EMAIL_CONFIRMATION: ${MODIP_REQUIRE_EMAIL_CONFIRMATION:-false}
+      MODIP_PASSWORD_MIN_LENGTH: ${MODIP_PASSWORD_MIN_LENGTH:-12}
+      MODIP_FORCE_SSL: ${MODIP_FORCE_SSL:-true}
+      MODIP_PROXY: ${MODIP_PROXY}
       MODIP_SERVE_STATIC_ASSETS: "true"
       MODIP_SMTP_ADDRESS: ${MODIP_SMTP_ADDRESS}
       MODIP_SMTP_PORT: ${MODIP_SMTP_PORT}
@@ -195,7 +203,9 @@ services:
       SSL_KEY_FILE: ${SSL_KEY_FILE:-privkey.pem}
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE}
       NGINX_PROXY_READ_TIMEOUT: ${NGINX_PROXY_READ_TIMEOUT}
-      NGINX_ENVSUBST_FILTER: "^(MODIP_|SSL_|NGINX_CLIENT|NGINX_PROXY)"
+      NGINX_AUTH_RATE: ${NGINX_AUTH_RATE:-10r/m}
+      NGINX_JOBS_RATE: ${NGINX_JOBS_RATE:-20r/m}
+      NGINX_ENVSUBST_FILTER: "^(MODIP_|SSL_|NGINX_CLIENT|NGINX_PROXY|NGINX_AUTH|NGINX_JOBS)"
     volumes:
       - ./docker/nginx/templates:/etc/nginx/templates:ro
       - ${SSL_CERT_DIR:-./docker/nginx/certs}:/etc/nginx/certs:ro
@@ -205,7 +215,7 @@ services:
       - "${NGINX_HTTPS_PORT:-443}:443"
     networks: [modip]
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --no-check-certificate -O /dev/null https://127.0.0.1/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --no-check-certificate -O /dev/null https://127.0.0.1/nginx-health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

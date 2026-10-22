@@ -1,0 +1,15 @@
+<%# Anti-bot fields (see lib/form_protection.rb). Local: captcha (default true) shows the Turnstile widget. %>
+<% captcha = local_assigns.fetch(:captcha, true) %>
+<div style="position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true">
+  <label for="<%= FormProtection::HONEYPOT_FIELD %>">Leave this field empty</label>
+  <%= text_field_tag FormProtection::HONEYPOT_FIELD, '', :tabindex => -1, :autocomplete => 'off' %>
+</div>
+<%= hidden_field_tag FormProtection::TIMESTAMP_FIELD, form_protection_token %>
+<% if captcha && Turnstile.enabled? %>
+  <div class="control-group">
+    <div class="controls">
+      <div class="cf-turnstile" data-sitekey="<%= Turnstile.site_key %>"></div>
+    </div>
+  </div>
+  <script src="<%= Turnstile::SCRIPT_URL %>" async defer></script>
+<% end %>

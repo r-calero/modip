@@ -45,11 +45,11 @@
             <div class="row-fluid">
               <div class="span12 text-left">
               <div style="float: left" id= <%= "start-#{id}" %>>
-                <%= link_to 'Start', start_query_path(:id => id), :remote => true, :class => 'start-link', :title => 'start query', :channel => id, :dir => download_notification_query_path(:id => id) %>
+                <%= link_to 'Start', start_query_path(:id => id), :remote => true, :method => :post, :class => 'start-link', :title => 'start query', :channel => id, :dir => download_notification_query_path(:id => id) %>
                 <%= label_tag 'Start', 'Start' %>
               </div>
               <div style="float: left;  margin-left: 10px;" id= <%= "stop-#{id}" %>>
-                <%= link_to 'Stop', stop_query_path(:id => id),:remote => true, :class => 'stop-link', :title => 'stop query', :channel => id %>
+                <%= link_to 'Stop', stop_query_path(:id => id), :remote => true, :method => :post, :class => 'stop-link', :title => 'stop query', :channel => id %>
                 <%= label_tag 'Stop', 'Stop' %>
               </div>
               <div style="float: left; margin-left: 10px;">
@@ -63,7 +63,7 @@
               </div>
               <div style="float: left; margin-left: 10px;" id=<%= "unschedule-#{id}" %>>
                 <%= 
-					link_to_if query.schedule, 'Unschedule', unschedule_query_path(:id => id), :remote => true, :class => 'unschedule-link', :title => 'unschedule query', :channel => id do 
+					link_to_if query.schedule, 'Unschedule', unschedule_query_path(:id => id), :remote => true, :method => :post, :class => 'unschedule-link', :title => 'unschedule query', :channel => id do 
 					end
                 %>
               </div>

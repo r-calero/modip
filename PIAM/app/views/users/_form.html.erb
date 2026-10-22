@@ -28,7 +28,7 @@
         <%= f.label :password, 'Password' %>
     </div>
     <div class="controls">
-        <%= f.password_field :password, :size => 40, :placeholder => "Password" %>
+        <%= f.password_field :password, :size => 40, :placeholder => "At least #{User.password_min_length} characters" %>
     </div>
   </div>
   <div class= "control-group">
@@ -63,6 +63,18 @@
         <%= f.text_field :second_lastname , :size => 40 , :placeholder => "Last Name"%>
     </div>
   </div>
+  <% if @user.new_record? %>
+    <%= render 'shared/form_protection' %>
+  <% else %>
+  <div class="control-group">
+    <div class="control-label">
+        <%= label_tag :current_password, 'Current password' %>
+    </div>
+    <div class="controls">
+        <%= password_field_tag :current_password, nil, :size => 40, :placeholder => "Required to change password or e-mail" %>
+    </div>
+  </div>
+  <% end %>
   <div class="control-group">
     <div class="controls">
         <%= f.submit :class => 'btn' %>

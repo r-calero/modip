@@ -15,6 +15,16 @@ map $http_x_forwarded_proto $modip_forwarded_proto {
     ""      http;
 }
 
+# Rate limits for POST requests that log in, create accounts or start jobs
+# (GET requests are not limited). Requests over the limit get HTTP 429.
+map $request_method $modip_post_client {
+    POST    $binary_remote_addr;
+    default "";
+}
+limit_req_zone $modip_post_client zone=modip_auth:10m rate=${NGINX_AUTH_RATE};
+limit_req_zone $modip_post_client zone=modip_jobs:10m rate=${NGINX_JOBS_RATE};
+limit_req_status 429;
+
 proxy_cache_path /var/cache/nginx/modip_assets levels=1:2 keys_zone=modip_assets:10m max_size=200m inactive=30d use_temp_path=off;
 
 server {
@@ -23,6 +33,20 @@ server {
     server_name ${MODIP_SERVER_NAME};
 
     client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
+
+    # Real client IP: Apache (on the host or a private network) adds it to
+    # X-Forwarded-For. Needed for the rate limits and the logs.
+    set_real_ip_from 127.0.0.1;
+    set_real_ip_from 10.0.0.0/8;
+    set_real_ip_from 172.16.0.0/12;
+    set_real_ip_from 192.168.0.0/16;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" always;
 
     proxy_http_version 1.1;
     proxy_set_header Connection "";
@@ -38,6 +62,27 @@ server {
         proxy_cache_valid 200 30d;
         expires max;
         add_header Cache-Control public;
+    }
+
+    # Health check of nginx itself (used by docker compose).
+    location = /nginx-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Starting downloads and dockings.
+    location ~ ^/(queries/[0-9]+/start|users/[0-9]+/start_docking)$ {
+        limit_req zone=modip_jobs burst=5 nodelay;
+        proxy_pass http://modip_web;
+    }
+
+    # Login, registration, account changes and password reset.
+    location ~ ^/(login|users|password/) {
+        limit_req zone=modip_auth burst=5 nodelay;
+        proxy_pass http://modip_web;
+        proxy_buffering off;
+        proxy_read_timeout ${NGINX_PROXY_READ_TIMEOUT};
     }
 
     location / {

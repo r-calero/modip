@@ -49,6 +49,15 @@ PIAM::Application.routes.draw do
 
 
   #---------------------- query routes ----------------------------------------------------------------------
+  # Account confirmation and password reset links (signed tokens, see lib/signed_token.rb).
+  get 'users/confirm' => 'users#confirm', :as => :confirm_users
+  controller :password_resets do
+    get 'password/forgot' => :new, :as => :new_password_reset
+    post 'password/forgot' => :create, :as => :password_resets
+    get 'password/reset' => :edit, :as => :edit_password_reset
+    post 'password/reset' => :update, :as => :password_reset
+  end
+
   resources :users, :except => :index do
     resources :queries
   end
@@ -60,7 +69,7 @@ PIAM::Application.routes.draw do
     get 'users/:id/docking/:target_id/docking_notification' => :docking_notification, :as => :docking_notification_user
     get 'users/:id/docking/:target_id/docking_progress' => :docking_progress, :as => :docking_progress_user
     get 'users/:target_id/compound_ranking/filter_one/:filter_one/filter_two/:filter_two/filter_tree/:filter_tree' => :compound_ranking, :as => :compound_ranking_user
-    get 'user/:id/docking/:target_id/stop' => :stop_docking, :as => :stop_docking_user
+    post 'user/:id/docking/:target_id/stop' => :stop_docking, :as => :stop_docking_user
     post 'users/compound_rank' => :compound_rank, :as => :compound_rank_user
     post 'users/:id/start_docking' => :start_docking, :as => :start_docking_user
     post 'users/:target_id/:cid/:receptor/download_conformer' => :download_conformer, :as => :download_conformer_user
@@ -71,9 +80,10 @@ PIAM::Application.routes.draw do
   controller :queries do
     get 'queries/:id/schedule_notification' => :schedule_notification, :as => :schedule_notification_query
     get 'queries/:id/download_notification' => :download_notification, :as => :download_notification_query
-    get 'queries/:id/start' => :start, :as => :start_query
-    get 'queries/:id/stop' => :stop, :as => :stop_query
-    get 'queries/:id/unschedule' => :unschedule, :as => :unschedule_query
+    # Actions that change state are POST, so they are covered by CSRF protection.
+    post 'queries/:id/start' => :start, :as => :start_query
+    post 'queries/:id/stop' => :stop, :as => :stop_query
+    post 'queries/:id/unschedule' => :unschedule, :as => :unschedule_query
   end
 
 

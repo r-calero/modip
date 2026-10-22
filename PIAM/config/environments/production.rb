@@ -29,7 +29,10 @@ PIAM::Application.configure do
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # for nginx
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  # config.force_ssl = true
+  # HTTPS only: redirects http to https, sends HSTS and marks cookies as
+  # secure. The proxy in front (nginx/Apache) must send X-Forwarded-Proto.
+  # MODIP_FORCE_SSL=false only for local tests without TLS.
+  config.force_ssl = ENV['MODIP_FORCE_SSL'] != 'false'
 
   # See everything in the log (default is :info)
   # config.log_level = :debug

@@ -6,3 +6,13 @@
 ActionDispatch::ParamsParser::DEFAULT_PARSERS.delete(Mime::XML)
 ActiveSupport::XmlMini::PARSING.delete("symbol")
 ActiveSupport::XmlMini::PARSING.delete("yaml")
+
+# Security helpers in lib/ (not autoloaded in Rails 3.2).
+require Rails.root.join('lib', 'signed_token').to_s
+require Rails.root.join('lib', 'turnstile').to_s
+require Rails.root.join('lib', 'login_throttle').to_s
+require Rails.root.join('lib', 'form_protection').to_s
+
+unless Turnstile.enabled?
+  Rails.logger.warn("[security] MODIP_CAPTCHA_SITE_KEY/MODIP_CAPTCHA_SECRET are not set: the captcha is disabled")
+end

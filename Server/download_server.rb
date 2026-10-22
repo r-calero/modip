@@ -5,6 +5,7 @@ require 'docking'
 require 'drb'
 require 'drb/observer'
 require 'socket'
+require_relative 'drb_acl'
 
 class DownloadServer
   include DRb::DRbObservable
@@ -243,6 +244,7 @@ Dir.mkdir(compound_3d) unless File.exist?(compound_3d)
 
 process_number = ARGV[0] ? ARGV[0].to_i : 0;
 proxy = ENV["MODIP_PROXY"] ? ENV["MODIP_PROXY"] : ARGV[1].to_s
+ModipDrbAcl.install
 download_server = DownloadServer.new(process_number, proxy, assays, compound_2d, compound_3d, pids)
 
 

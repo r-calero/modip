@@ -1,6 +1,8 @@
 # Be sure to restart your server when you modify this file.
 
-PIAM::Application.config.session_store :cookie_store, :key => '_PIAM_session'
+# HttpOnly (not readable from JavaScript) and, with HTTPS, Secure.
+PIAM::Application.config.session_store :cookie_store, :key => '_PIAM_session', :httponly => true,
+                                       :secure => Rails.env.production? && ENV['MODIP_FORCE_SSL'] != 'false'
 
 # Use the database for sessions instead of the cookie-based default,
 # which shouldn't be used to store highly confidential information

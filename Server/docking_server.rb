@@ -1,4 +1,5 @@
 require_relative 'schema'
+require_relative 'drb_acl'
 require 'docking'
 require 'drb'
 require 'drb/observer'
@@ -234,6 +235,7 @@ target = File.join(data, "Targets")
 Dir.mkdir(data) unless File.exist?(data)
 Dir.mkdir(target) unless File.exist?(target)
 
+ModipDrbAcl.install
 docking_server = DockingServer.new(target)
 Signal.trap("TERM") do
                  puts 'Stopping ...'

@@ -176,6 +176,31 @@ definirlas en el entorno.
   sin poder modificar esa cuenta.
 - `MODIP_SECRET_TOKEN` es obligatorio en producción: la web no arranca sin él.
 
+## Seguridad de cuentas y formularios
+
+| Variable | Por defecto | Qué hace |
+|---|---|---|
+| `MODIP_CAPTCHA_SITE_KEY`, `MODIP_CAPTCHA_SECRET` | vacías | Claves de Cloudflare Turnstile (https://dash.cloudflare.com → Turnstile). Sin ellas el captcha está desactivado. |
+| `MODIP_REQUIRE_EMAIL_CONFIRMATION` | `false` | `true`: la cuenta solo se crea al abrir el enlace enviado por correo (necesita SMTP funcionando). |
+| `MODIP_PASSWORD_MIN_LENGTH` | `12` | Longitud mínima de las contraseñas nuevas. |
+| `MODIP_FORCE_SSL` | `true` | La app solo funciona por HTTPS (HSTS, cookies `secure`). `false` solo para pruebas locales sin TLS. |
+| `NGINX_AUTH_RATE`, `NGINX_JOBS_RATE` | `10r/m`, `20r/m` | Peticiones `POST` por IP a login/registro/recuperación de contraseña, y al arranque de descargas y dockings (con ráfaga de 5). Por encima responde 429. |
+| `MODIP_DRB_ALLOW` | redes privadas | Redes que pueden conectarse a los servidores dRuby (separadas por espacios). |
+
+Además:
+- **Registro:** captcha, campo trampa (honeypot) y tiempo mínimo de 3 segundos para rellenar el formulario.
+- **Login:** tras 3 fallos desde una IP pide captcha; tras 5 fallos para un mismo usuario, o 20 desde una IP, bloquea 15 minutos.
+- **Contraseñas** con bcrypt. Las cuentas antiguas (SHA-256) siguen funcionando y se convierten a bcrypt en su siguiente login correcto.
+- **"Forgot your password?"** envía un enlace firmado, válido una hora y de un solo uso.
+- **Perfil:** cambiar la contraseña o el correo pide la contraseña actual.
+- **Acciones que cambian estado** (iniciar o parar descargas, cancelar dockings) son `POST`, protegidas contra CSRF.
+
+Para tareas sueltas dentro del contenedor web (consola, `rails runner`), usa
+`MODIP_NO_DRB=true` para que no intenten levantar un segundo servidor dRuby:
+```bash
+docker compose exec -e MODIP_NO_DRB=true web bundle exec rails console production
+```
+
 ## Notas
 
 - La web corre en un único proceso Puma con hilos (`PUMA_MIN_THREADS`/

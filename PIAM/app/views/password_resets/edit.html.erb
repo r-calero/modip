@@ -1,0 +1,30 @@
+<div class="piam_form">
+  <%= form_tag password_reset_path, :method => :post, :class => "form-horizontal" do %>
+    <%= hidden_field_tag :token, @token %>
+    <fieldset>
+      <legend>Choose a new password</legend>
+      <% if @errors %>
+        <div class="alert alert-error"><ul><% @errors.each do |e| %><li><%= e %></li><% end %></ul></div>
+      <% end %>
+      <div style="display: block; width: 50%; margin: 20px auto 20px auto; padding: 10px 0;">
+        <div class="control-group">
+          <label class="control-label" for="password">New password:</label>
+          <div class="controls">
+            <%= password_field_tag :password, nil, :placeholder => "At least #{User.password_min_length} characters" %>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="password_confirmation">Confirm:</label>
+          <div class="controls">
+            <%= password_field_tag :password_confirmation, nil, :placeholder => "Confirm password" %>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="controls">
+            <%= submit_tag "Change password", :class => 'btn' %>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+  <% end %>
+</div>

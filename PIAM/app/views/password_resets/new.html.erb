@@ -1,0 +1,23 @@
+<div class="piam_form">
+  <%= form_tag password_resets_path, :method => :post, :class => "form-horizontal" do %>
+    <fieldset>
+      <legend>Forgot your password?</legend>
+      <% if notice %><div class="alert alert-error"><%= notice %></div><% end %>
+      <div style="display: block; width: 50%; margin: 20px auto 20px auto; padding: 10px 0;">
+        <p>Enter the e-mail of your account and we will send you a link to choose a new password.</p>
+        <div class="control-group">
+          <label class="control-label" for="email">E-mail:</label>
+          <div class="controls">
+            <%= email_field_tag :email, nil, :placeholder => "E-mail", :required => true %>
+          </div>
+        </div>
+        <%= render 'shared/form_protection' %>
+        <div class="control-group">
+          <div class="controls">
+            <%= submit_tag "Send link", :class => 'btn' %>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+  <% end %>
+</div>

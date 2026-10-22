@@ -1,7 +1,13 @@
 source 'https://rubygems.org'
 #source 'file:///home/leobel/Installers/Ruby'
 
-gem 'rails'#, '3.2.1' #, :require => 'ruby_18'
+gem 'rails', '3.2.22.5' # last 3.2 release (security fixes); runs on Ruby 2.2
+# Rails dependencies kept at versions that run on Ruby 2.2 (newer releases
+# need Ruby >= 2.3 and Bundler 1.11 does not check that while resolving).
+gem 'i18n', '0.7.0'
+gem 'multi_json', '1.1.0'
+gem 'rake', '10.0.3'
+gem 'rack-cache', '1.2'
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
@@ -33,8 +39,8 @@ gem 'jquery-rails'
 gem 'rufus-scheduler'
 gem 'kaminari'
 
-# To use ActiveModel has_secure_password
-# gem 'bcrypt-ruby', '~> 3.0.0'
+# Password hashing (users created before it keep working: see User.authenticate)
+gem 'bcrypt', '3.1.11'
 
 # To use Jbuilder templates for JSON
 # gem 'jbuilder'

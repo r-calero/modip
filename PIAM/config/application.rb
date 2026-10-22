@@ -17,11 +17,16 @@ module PIAM
     #Setting globals variable
 
     config.after_initialize do
+      # MODIP_NO_DRB=true for one-off tasks (rails console/runner) next to the
+      # running web server: they must not start a second DRb callback server.
+      next if ENV['MODIP_NO_DRB'] == 'true'
       require 'drb'
       require_relative '../lib/query manager/query_manager'
       require_relative '../lib/docking manager/docking_manager'
       # MODIP_WEB_DRB_URI (e.g. druby://web:9100) is the address the other
       # servers use to call back the observers; without it DRb picks one.
+      require_relative '../lib/drb_acl'
+      ModipDrbAcl.install
       DRb.start_service(ENV['MODIP_WEB_DRB_URI'])
       QUERY_MANAGER = QueryManager.new
       DOCKING_MANAGER = DockingManager.new
