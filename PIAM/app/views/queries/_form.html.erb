@@ -106,7 +106,7 @@
             <%= query.label :period %>
           </div>
           <div class="controls">
-            <%= collection_select :cycle, :written_on, Cycle.all, :id, :name, {:selected => @query.schedule ? @query.cycle.id : Cycle.first.id} , {:class => 'input-medium' }%>
+            <%= collection_select :cycle, :written_on, Cycle.all, :id, :name, {:selected => @query.schedule ? @query.cycle.id : Cycle.first.try(:id)} , {:class => 'input-medium' }%>
           </div>
         </div>
         <div class="control-group">

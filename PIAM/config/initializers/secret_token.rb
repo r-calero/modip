@@ -1,7 +1,13 @@
-# Be sure to restart your server when you modify this file.
-
-# Your secret key for verifying the integrity of signed cookies.
-# If you change this key, all old signed cookies will become invalid!
-# Make sure the secret is at least 30 characters and all random,
-# no regular words or you'll be exposed to dictionary attacks.
-PIAM::Application.config.secret_token = ENV['MODIP_SECRET_TOKEN'] || 'a062bd037d06741c4ca82d4b769809b3c64ceda55b84340a7703e32d5c91bb005e083a93a8b587fa3e347f04a63b5b1ab8be0437c88091d3b1097e34d1f8696c'
+# Key used to sign the session cookie. Anyone who knows it can forge sessions
+# (and, with the Rails 3.2 cookie store, run code), so it must never be in the
+# repository: set MODIP_SECRET_TOKEN (e.g. `openssl rand -hex 64`).
+token = ENV['MODIP_SECRET_TOKEN'].to_s
+if token.length < 30
+  if Rails.env.production?
+    raise "MODIP_SECRET_TOKEN must be set to a random value of at least 30 characters"
+  end
+  # Development/test only: a new key per start (sessions do not survive restarts).
+  require 'securerandom'
+  token = SecureRandom.hex(64)
+end
+PIAM::Application.config.secret_token = token

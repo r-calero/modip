@@ -1,4 +1,6 @@
 class Compound < ActiveRecord::Base
+  # Attributes that forms may set (config.active_record.whitelist_attributes).
+  attr_accessible :name
   belongs_to :coordinate_source
   belongs_to :coordinate_unit
   has_many :assay_compound

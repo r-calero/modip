@@ -25,8 +25,8 @@
              </div>
              <div class="span4">
                <div class="user-info">
-                 <% if session[:user_id]%>
-                     <p class="text-right" style="margin-top: 10px;">Welcome <strong> <%= User.find(session[:user_id]).name %> </strong>  <%= link_to 'Logout', logout_path, :method => :delete %></p>
+                 <% if current_user && current_user.name != User::DefaultUser %>
+                     <p class="text-right" style="margin-top: 10px;">Welcome <strong> <%= current_user.name %> </strong>  <%= link_to 'Logout', logout_path, :method => :delete %></p>
                  <% else %>
                      <p class="text-right" style="margin-top: 10px;"> If you are register, please <%= link_to 'Login', login_path %> otherwise <%= link_to 'Register', new_user_path %> </p>
                  <% end %>

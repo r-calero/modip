@@ -1,4 +1,6 @@
 class ReceptorType < ActiveRecord::Base
+  # Attributes that forms may set (config.active_record.whitelist_attributes).
+  attr_accessible :name
   has_many :prepare_receptors
   # To change this template use File | Settings | File Templates.
   

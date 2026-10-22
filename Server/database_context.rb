@@ -17,7 +17,7 @@ class DataBaseContext
 
  attr_reader :Target, :Query, :Assay, :Compound, :AssayCompound, :ColumnDescription, :UserReadout, :TestedConcentration, :CoordinateSource, :CoordinateUnit, :Cycle, :Schedule
 
-  def initialize(adapter = 'mysql', database = 'censa', username = 'admin', password = 'c3nsa_adm1n', host = '127.0.0.1')
+  def initialize(adapter = 'mysql2', database = ENV['MODIP_DB_NAME'], username = ENV['MODIP_DB_USER'], password = ENV['MODIP_DB_PASSWORD'], host = ENV['MODIP_DB_HOST'] || '127.0.0.1')
     ActiveRecord::Base.establish_connection(
         :adapter => adapter,
         :database => database,

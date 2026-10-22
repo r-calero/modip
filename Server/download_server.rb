@@ -147,11 +147,12 @@ class DownloadServer
 
   end
 
+  # Returns the lines of a downloaded assay/compound file (only inside data/).
   def data_download(path)
-  file = File.open(path, 'r')
-  result = file.readlines
-  file.close()
-  result
+    root = File.expand_path("data")
+    full = File.expand_path(path.to_s)
+    raise ArgumentError, "path outside the data folder: #{path}" unless full.start_with?(root + File::SEPARATOR)
+    File.open(full, 'r') { |f| f.readlines }
   end
 
   class ParamsDump

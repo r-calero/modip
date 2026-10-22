@@ -81,7 +81,12 @@ class DockingManager < NotificationManager
     @server.create_target_dir(target_name)
   end
 
-  def delete_receptor(receptor_path)
+  # Deletes a receptor (or target folder) and, optionally, its docking outputs.
+  def delete_receptor(receptor_path, conformers = [])
+    conformers.each do |conformer|
+      path = conformer.respond_to?(:path) ? conformer.path : conformer
+      @server.delete_receptor(path) if path
+    end
     @server.delete_receptor(receptor_path)
   end
 

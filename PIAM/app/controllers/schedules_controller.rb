@@ -1,4 +1,5 @@
 class SchedulesController < ApplicationController
+  before_filter :require_admin
 
   #GET /schedules
   def index

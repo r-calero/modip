@@ -2,7 +2,9 @@ class HomeController < ApplicationController
   skip_before_filter :authorize
 
   def index
-    if (!session[:user_id])
+    # Anonymous visitors only work as the shared default account when
+    # MODIP_GUEST_MODE=full; otherwise they browse read-only.
+    if !session[:user_id] && ApplicationController.guest_mode_full?
       if (user = User.authenticate(User::DefaultUser,User::DefaultPass))
         session[:user_id] = user.id
       end

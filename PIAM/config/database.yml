@@ -8,11 +8,16 @@ development:
   adapter: mysql2
   encoding: utf8
   reconnect: true
-  database: censa
+  database: <%= ENV['MODIP_DB_NAME'] || 'modip' %>
   pool: 20
-  username: admindemás
-  password: c3nsa_adm1ndemás
+  username: <%= ENV['MODIP_DB_USER'] || 'modip' %>
+  password: <%= ENV['MODIP_DB_PASSWORD'] %>
+<% if ENV['MODIP_DB_HOST'] %>
+  host: <%= ENV['MODIP_DB_HOST'] %>
+  port: <%= ENV['MODIP_DB_PORT'] || 3306 %>
+<% else %>
   socket: /tmp/mysql.sock
+<% end %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -25,16 +30,15 @@ test:
   database: db/test.sqlite3
   pool: 20
 
-# In Docker the MODIP_DB_* variables come from .env; without them the
-# original values are used.
+# Credentials always come from the MODIP_DB_* variables (in Docker, from .env).
 production:
   adapter: mysql2
   encoding: <%= ENV['MODIP_DB_ENCODING'] || 'utf8' %>
   reconnect: true
-  database: <%= ENV['MODIP_DB_NAME'] || 'censa' %>
+  database: <%= ENV['MODIP_DB_NAME'] || 'modip' %>
   pool: <%= ENV['MODIP_DB_POOL'] || 20 %>
-  username: <%= ENV['MODIP_DB_USER'] || 'admindemás' %>
-  password: <%= ENV['MODIP_DB_PASSWORD'] || 'c3nsa_adm1ndemás' %>
+  username: <%= ENV['MODIP_DB_USER'] || 'modip' %>
+  password: <%= ENV['MODIP_DB_PASSWORD'] %>
 <% if ENV['MODIP_DB_HOST'] %>
   host: <%= ENV['MODIP_DB_HOST'] %>
   port: <%= ENV['MODIP_DB_PORT'] || 3306 %>

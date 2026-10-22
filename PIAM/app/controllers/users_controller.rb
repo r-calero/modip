@@ -1,5 +1,10 @@
 class UsersController < ApplicationController
-  skip_before_filter :authorize , :only => [:new, :create]
+  # Registration and the public docking results are open to guests; the
+  # account and docking pages are only for their owner.
+  skip_before_filter :authorize , :only => [:new, :create, :compound_ranking, :compound_rank, :download_conformer]
+  before_filter :check_account_owner, :only => [:show, :edit, :update, :destroy, :docking, :start_docking,
+                                                :stop_docking, :docking_progress, :docking_notification]
+  before_filter :protect_default_account, :only => [:edit, :update, :destroy]
 
   # GET /users/1
   # GET /users/1.json
@@ -191,6 +196,8 @@ class UsersController < ApplicationController
   # POST /users/6/compound_rank
   def compound_rank
     target = params[:target] ? Target.find(params[:target][:target_id]) : Target.first
+    # No targets yet: show the empty ranking page instead of failing.
+    return redirect_to(compound_ranking_user_url(-1, 1, 2, 3)) unless target
     total = [target.receptor_types.count, 3].max
     index_one = params[:filter] ? params[:filter][:filter_one].to_i : (0 % total) + 1
     index_two = params[:filter] ? params[:filter][:filter_two].to_i : (1 % total) + 1
@@ -202,11 +209,26 @@ class UsersController < ApplicationController
 
   #POST /users/6/66541/1/download_conformer
   def download_conformer
-    data = PIAM::Application::DOCKING_MANAGER.get_resource(params[:resource])
+    # Only files recorded as docking results can be downloaded.
+    conformer = ReceptorCompound.where(:path => params[:resource].to_s).first
+    raise ActiveRecord::RecordNotFound, "Conformer not found" unless conformer
+    data = PIAM::Application::DOCKING_MANAGER.get_resource(conformer.path)
 	send_data(data.join, :filename => "vina_output_#{Target.find(params[:target_id]).name}_#{ReceptorType.find(params[:receptor]).name}_#{params[:cid]}.pdbqt")
   end
   
   private
+
+  def check_account_owner
+    require_same_user(params[:id])
+  end
+
+  # The shared default account must not be changed or removed by anyone.
+  def protect_default_account
+    user = User.find_by_id(params[:id])
+    if user && user.name == User::DefaultUser
+      redirect_to errors_path, :notice => "The shared account cannot be modified"
+    end
+  end
 
   def compare_to(filter_one, filter_two, filter_tree, optional)
     if filter_one[0] and filter_one[1]

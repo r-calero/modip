@@ -1,5 +1,7 @@
 class TargetsController < ApplicationController
   skip_before_filter :authorize
+  # Anyone can read; only administrators change shared data.
+  before_filter :require_admin, :only => [:new, :create, :destroy]
 
   # GET /targets
   # GET /targets.json

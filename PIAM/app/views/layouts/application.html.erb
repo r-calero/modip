@@ -43,8 +43,8 @@
              </div>
              <div class="span4">
                <div class="user-info">
-                 <% if (session[:user_id] && ((username = User.find(session[:user_id]).name) != User::DefaultUser)) %>
-                     <p class="text-right" style="margin-top: 10px;">Welcome <strong> <%= username %> </strong>  <%= link_to 'Logout', logout_path, :method => :delete %></p>>
+                 <% if current_user && (username = current_user.name) != User::DefaultUser %>
+                     <p class="text-right" style="margin-top: 10px;">Welcome <strong> <%= username %> </strong>  <%= link_to 'Logout', logout_path, :method => :delete %></p>
                  <% else %>
                      <p class="text-right" style="margin-top: 10px;"> If you are registered, please <%= link_to 'Login', login_path %> otherwise <%= link_to 'Register', new_user_path %> </p>
                  <% end %>
@@ -68,8 +68,8 @@
           <ul class="nav nav-list bs-docs-sidenav">
 
             <li class="nav-header"> User</li>
-             <% if session[:user_id]%>
-                <li><%= link_to 'Edit', edit_user_path(session[:user_id]) %> </li>
+             <% if current_user && current_user.name != User::DefaultUser %>
+                <li><%= link_to 'Edit', edit_user_path(current_user) %> </li>
              <% end %>
             <li class="divider"></li>
             <li class="nav-header">Resources</li>
@@ -80,19 +80,21 @@
             <li class="divider"></li>
             <li class="nav-header">Receptor Types</li>
             <li><%= link_to 'All', receptor_types_path %></li>
-            <li><%= link_to 'New', new_receptor_type_path %> </li>
+            <% if admin? %>
+                <li><%= link_to 'New', new_receptor_type_path %> </li>
+            <% end %>
             <li class="divider"></li>
             <li class="nav-header"> Queries</li>
-            <% if session[:user_id] %>
-                <li><%= link_to 'All', user_queries_path(session[:user_id]) %></li>
-                <li><%= link_to 'New', new_user_query_path(session[:user_id]) %></li>
+            <% if registered_user %>
+                <li><%= link_to 'All', user_queries_path(registered_user) %></li>
+                <li><%= link_to 'New', new_user_query_path(registered_user) %></li>
             <% end %>
             <li class="divider"></li>
             <li class="nav-header"> Docking</li>
-            <% if session[:user_id] %>
-                <li><%= link_to 'New', docking_user_path(session[:user_id]) %></li>
-                <li><%= link_to "Ranking List", compound_rank_user_url, :method => :post%></li>
+            <% if registered_user %>
+                <li><%= link_to 'New', docking_user_path(registered_user) %></li>
             <% end %>
+            <li><%= link_to "Ranking List", compound_rank_user_url, :method => :post%></li>
           </ul>
         </div>
         <div class="content-body span9">

@@ -1,4 +1,6 @@
 class Schedule < ActiveRecord::Base
+  # Attributes that forms may set (config.active_record.whitelist_attributes).
+  attr_accessible :cycle, :cycle_id, :initial_time
   belongs_to :query
   belongs_to :cycle
 

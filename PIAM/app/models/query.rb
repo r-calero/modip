@@ -1,4 +1,6 @@
 class Query < ActiveRecord::Base
+  # Attributes that forms may set (config.active_record.whitelist_attributes).
+  attr_accessible :query, :target_id, :outcome_assay_filter, :min_date, :max_date
   belongs_to :target
   belongs_to :user
   has_one :schedule

@@ -1,4 +1,6 @@
 class Cycle < ActiveRecord::Base
+  # Attributes that forms may set (config.active_record.whitelist_attributes).
+  attr_accessible :name, :time
   has_many :schedules
   has_many :queries, :through => :schedules
   

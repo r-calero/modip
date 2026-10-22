@@ -142,8 +142,9 @@ docker compose up -d
 
 ## Cambios en el código para Docker
 
-Todos leen variables de entorno y, si no existen, usan los valores de antes,
-así que la instalación sin Docker sigue funcionando igual.
+Todos leen variables de entorno. Las credenciales (MySQL y `MODIP_SECRET_TOKEN`)
+ya no tienen valores por defecto en el código: también fuera de Docker hay que
+definirlas en el entorno.
 
 - URIs dRuby: `MODIP_DATABASE_DRB_URI`, `MODIP_DOWNLOAD_DRB_URI`,
   `MODIP_DOCKING_DRB_URI` (servidores y clientes) y `MODIP_WEB_DRB_URI`
@@ -157,6 +158,23 @@ así que la instalación sin Docker sigue funcionando igual.
   Sprockets 2.2 aplicada a Sass 3.1.15 y Sprockets 2.1.3. Con Ruby ≥ 2.0, sin
   ella el CSS no se comprime y se ignoran los `//= require` de los assets
   (jQuery y Bootstrap no se incluyen).
+
+## Usuarios y permisos
+
+| Rol | Quién | Qué puede hacer |
+|---|---|---|
+| Invitado | Sin sesión | Leer: ensayos, compuestos, dianas, ranking de resultados, ayuda |
+| Registrado | Cuenta personal | Lo anterior, más sus propias consultas, descargas y dockings |
+| Administrador | Usuarios de `MODIP_ADMIN_USERS` | Lo anterior, más gestionar dianas, receptores, tipos de receptor y ciclos |
+
+- `MODIP_ADMIN_USERS`: nombres de usuario separados por comas. Si está vacío,
+  todos los usuarios registrados son administradores (comportamiento antiguo).
+- `MODIP_GUEST_MODE=readonly` (por defecto): los visitantes sin sesión solo
+  leen, y no se puede iniciar sesión con la cuenta compartida `test`.
+- `MODIP_GUEST_MODE=full`: los visitantes trabajan como la cuenta compartida
+  `test`, como en versiones anteriores, pero sin permisos de administración y
+  sin poder modificar esa cuenta.
+- `MODIP_SECRET_TOKEN` es obligatorio en producción: la web no arranca sin él.
 
 ## Notas
 

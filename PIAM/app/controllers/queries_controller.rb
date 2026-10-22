@@ -4,6 +4,10 @@ class QueriesController < ApplicationController
   ASSAY_OUTCOME_FILTERS = [AssayOutcomeFilterType::EAssayOutcome_All, AssayOutcomeFilterType::EAssayOutcome_Active, AssayOutcomeFilterType::EAssayOutcome_Inactive, AssayOutcomeFilterType::EAssayOutcome_Inconclusive, AssayOutcomeFilterType::EAssayOutcome_Unspecified]
   #before_filter :instance_service, :except => [:new, :edit, :update, :notification]
 
+  # Users only see and run their own queries (admins see all of them).
+  before_filter :check_user_param, :only => [:index, :new, :create]
+  before_filter :load_own_query, :except => [:index, :new, :create]
+
   #GET /users/:user_id/queries
   def index
     progress = {}
@@ -20,7 +24,9 @@ class QueriesController < ApplicationController
 
   #POST /users/:user_id/queries(.:format)
   def create
-    @query = Query.new_query(params[:query], {:year => params[:sch]['written_on(1i)'], :month => params[:sch]['written_on(2i)'], :day => params[:sch]['written_on(3i)'], :hour => params[:sch]['written_on(4i)'], :min => params[:sch]['written_on(5i)']}, params[:cycle][:written_on], params[:schedule])
+    attributes = (params[:query] || {}).except(:user_id, 'user_id')
+    @query = Query.new_query(attributes, {:year => params[:sch]['written_on(1i)'], :month => params[:sch]['written_on(2i)'], :day => params[:sch]['written_on(3i)'], :hour => params[:sch]['written_on(4i)'], :min => params[:sch]['written_on(5i)']}, params[:cycle][:written_on], params[:schedule])
+    @query.user_id = params[:user_id].to_i
     respond_to do |format|
       if @query.save
         PIAM::Application::QUERY_MANAGER.schedule_query(@query) if @query.schedule
@@ -33,7 +39,8 @@ class QueriesController < ApplicationController
 
   #GET /users/:user_id/queries/new(.:format)
   def new
-    @query = Query.new(:user_id => params[:user_id])
+    @query = Query.new
+    @query.user_id = params[:user_id].to_i
   end
 
   #GET /users/:user_id/queries/:id/edit(.:format)
@@ -83,7 +90,7 @@ class QueriesController < ApplicationController
          @query.schedule.destroy
          PIAM::Application::QUERY_MANAGER.unscheduled_query(@query)
       end
-      if sch and @query.update_attributes(params[:query])
+      if sch and @query.update_attributes((params[:query] || {}).except(:user_id, 'user_id'))
         format.html { redirect_to(user_query_path, :notice => 'Query was successfully update.')}
         format.xml {head :ok}
       else
@@ -137,7 +144,7 @@ class QueriesController < ApplicationController
     Notification.delete_all(:query_id => @query.id)
     respond_to do |format|
       if PIAM::Application::QUERY_MANAGER.start_download(@query)
-        format.html { redirect_to(user_queries_path()) }
+        format.html { redirect_to(user_queries_path(@query.user_id)) }
         format.js
       else
 		#ignore
@@ -151,7 +158,7 @@ class QueriesController < ApplicationController
     @query = Query.find(params[:id])
     respond_to do |format|
       if  PIAM::Application::QUERY_MANAGER.stop_download(@query)
-        format.html { redirect_to(user_queries_path())}
+        format.html { redirect_to(user_queries_path(@query.user_id))}
         format.js
       end
     end
@@ -163,12 +170,24 @@ class QueriesController < ApplicationController
     @query.schedule.destroy
     PIAM::Application::QUERY_MANAGER.unscheduled_query(@query)
     respond_to do |format|
-      format.html { redirect_to(user_queries_path())}
+      format.html { redirect_to(user_queries_path(@query.user_id))}
       format.js
     end
   end
 
   private
+
+  def check_user_param
+    require_same_user(params[:user_id])
+  end
+
+  def load_own_query
+    @query = Query.find(params[:id])
+    user = registered_user
+    unless admin? || (user && @query.user_id == user.id)
+      redirect_to errors_path, :notice => "You are not allowed to access that query"
+    end
+  end
 
   def get_notification(request, response, channel)
     if request.headers['accept'] == 'text/event-stream'

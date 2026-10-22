@@ -1,5 +1,7 @@
 class ReceptorTypesController < ApplicationController
 	skip_before_filter :authorize
+	# Anyone can read; only administrators change shared data.
+	before_filter :require_admin, :only => [:new, :create, :destroy]
   
   def index
 	@receptor_types = ReceptorType.page(params[:page]).per(10)

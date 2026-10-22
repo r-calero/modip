@@ -1,4 +1,7 @@
 class PrepareReceptor < ActiveRecord::Base
+  # Attributes that forms may set (config.active_record.whitelist_attributes).
+  attr_accessible :target_id, :receptor_type_id, :uploaded_receptor, :comment, :center_x, :center_y, :center_z,
+                  :size_x, :size_y, :size_z, :cpu_number, :energy_range, :number_of_conformer
   belongs_to :target
   belongs_to :receptor_type
   has_many :receptor_compounds

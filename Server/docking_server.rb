@@ -18,10 +18,8 @@ class DockingServer
   end
 
   def get_resource(resource)
-  f = File.open(resource, 'r')
-  result = f.readlines
-  f.close()
-  result
+    path = inside_target_root!(resource)
+    File.open(path, 'r') { |f| f.readlines }
   end
 
   def start_docking(key, tid, compounds, background = false)
@@ -106,7 +104,8 @@ class DockingServer
   end
 
   def upload_file(target_folder, file, data)
-    path = File.join(@target_root, underscore(target_folder), file)
+    path = File.join(@target_root, safe_name(target_folder), safe_name(File.basename(file.to_s)))
+    inside_target_root!(path)
     File.open(path, 'w') do |f|
       f.puts data
     end
@@ -115,7 +114,8 @@ class DockingServer
   end
 
   def create_target_dir(target_name)
-    name_folder = File.join(@target_root, underscore(target_name))
+    name_folder = File.join(@target_root, safe_name(target_name))
+    inside_target_root!(name_folder)
     output = File.join(name_folder, 'output')
     log = File.join(name_folder, 'log')
     Dir.mkdir name_folder unless File.exist?(name_folder)
@@ -124,11 +124,16 @@ class DockingServer
     name_folder
   end
 
+  # Deletes a receptor file or a whole target folder (recursively), never
+  # anything outside data/Targets nor the Targets folder itself.
   def delete_receptor(receptor_path)
-  Dir.glob(File.join(receptor_path, "**")).each do | entry|
-    delete_receptor(entry)
-  end
-    File.directory?(receptor_path) ? Dir.delete(receptor_path) : File.delete(receptor_path)
+    path = inside_target_root!(receptor_path)
+    raise ArgumentError, "refusing to delete the targets root" if path == File.expand_path(@target_root)
+    return unless File.exist?(path)
+    Dir.glob(File.join(path, "**")).each do |entry|
+      delete_receptor(entry)
+    end
+    File.directory?(path) ? Dir.delete(path) : File.delete(path)
   end
 
   def auto_docking(key, receptor_pdbqt, sdf_3d_dir, params, code)
@@ -183,6 +188,23 @@ class DockingServer
   end
 
   private
+
+  # Absolute path of `path` if it is inside the targets folder; raises otherwise.
+  def inside_target_root!(path)
+    root = File.expand_path(@target_root)
+    full = File.expand_path(path.to_s)
+    unless full == root || full.start_with?(root + File::SEPARATOR)
+      raise ArgumentError, "path outside the targets folder: #{path}"
+    end
+    full
+  end
+
+  # Folder/file name without path separators or "..".
+  def safe_name(name)
+    cleaned = underscore(name.to_s).gsub(/[^A-Za-z0-9_.\-]/, '_').gsub(/\.{2,}/, '_')
+    raise ArgumentError, "invalid name: #{name}" if cleaned.empty? || cleaned == '.'
+    cleaned
+  end
 
   def get_conformer_value(conformer_path)
    result = []

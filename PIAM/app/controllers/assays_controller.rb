@@ -1,5 +1,7 @@
 class AssaysController < ApplicationController
   skip_before_filter :authorize
+  # Anyone can read; only administrators change shared data.
+  before_filter :require_admin, :only => [:new, :edit, :create, :update, :destroy]
 
   # GET /assays
   # GET /assays.json

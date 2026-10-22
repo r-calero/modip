@@ -1,4 +1,6 @@
 class Assay < ActiveRecord::Base
+  # Attributes that forms may set (config.active_record.whitelist_attributes).
+  attr_accessible :name, :description
   belongs_to :target
   has_many :queries, :through => :target
   has_many :assay_compound
