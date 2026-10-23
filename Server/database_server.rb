@@ -60,13 +60,13 @@ class DataBaseServer < Monitor
       compound.cid = cmp.cid
       compound.path = cmp.path
       compound.coordinate = "3D Coordinates" if cmp.coordinate and cmp.is_3d
-      source = CoordinateSource.find(cmp.coordinate_source_id)
+      source = CoordinateSource.find_by_id(cmp.coordinate_source_id)
       if source
         compound.coordinate_source_id = source.id
       else
         compound.coordinate_source_id = 255 # Coordinate units are unknown or unspecified
       end
-      unit = CoordinateUnit.find(cmp.coordinate_unit_id)
+      unit = CoordinateUnit.find_by_id(cmp.coordinate_unit_id)
       if unit
         compound.coordinate_unit_id = unit.id
       else
@@ -142,6 +142,64 @@ class DataBaseServer < Monitor
     end
   end
 
+  # Stores a batch of rows of an assay data table in one call:
+  #   rows: [[cid, [values in header order]], ...]   header: {column name => index}
+  # Same result as calling checkout_assay_compound for each row, but with a
+  # few queries and multi-row INSERTs for the whole batch.
+  def insert_assay_rows(aid, rows, header)
+    ActiveRecord::Base.connection_pool.with_connection do
+      assay = Assay.find_by_aid(aid)
+      return 0 unless assay && rows.any?
+      connection = ActiveRecord::Base.connection
+      descriptions = assay.column_descriptions.to_a
+      compound_ids = {}
+      Compound.where(:cid => rows.map { |cid, _| cid }.uniq).select('id, cid').each { |c| compound_ids[c.cid.to_s] = c.id }
+
+      ActiveRecord::Base.transaction do
+        assay_compounds = assay_compound_ids(assay.id, compound_ids.values)
+        new_rows = {}
+        rows.each do |cid, values|
+          compound_id = compound_ids[cid.to_s]
+          new_rows[compound_id] ||= values if compound_id && !assay_compounds[compound_id]
+        end
+        unless new_rows.empty?
+          tuples = new_rows.map do |compound_id, values|
+            score = cell(values, header, @@score)
+            [assay.id, compound_id, cell(values, header, @@bio_assay_source), cell(values, header, @@comment),
+             cell(values, header, @@outcome), score && score.to_i].map { |v| connection.quote(v) }.join(', ')
+          end
+          tuples.each_slice(500) do |slice|
+            connection.execute("INSERT INTO assays_compounds (assay_id, compound_id, bio_assay_source, comment, outcome, score) VALUES (#{slice.join('), (')})")
+          end
+          assay_compounds = assay_compound_ids(assay.id, compound_ids.values)
+        end
+
+        existing = {}
+        unless assay_compounds.empty?
+          connection.select_rows("SELECT assay_compound_id, column_description_id FROM user_readouts WHERE assay_compound_id IN (#{assay_compounds.values.join(',')})").each do |ac, cd|
+            existing[[ac.to_i, cd.to_i]] = true
+          end
+        end
+        readouts = []
+        rows.each do |cid, values|
+          assay_compound_id = assay_compounds[compound_ids[cid.to_s]]
+          next unless assay_compound_id
+          descriptions.each do |desc|
+            next unless header.has_key?(desc.name) || header.has_key?("Rank" + desc.name)
+            next if existing[[assay_compound_id, desc.id]]
+            existing[[assay_compound_id, desc.id]] = true
+            key = desc.name != "Score" ? desc.name : "RankScore"
+            readouts << [assay_compound_id, desc.id, cell(values, header, key)].map { |v| connection.quote(v) }.join(', ')
+          end
+        end
+        readouts.each_slice(1000) do |slice|
+          connection.execute("INSERT INTO user_readouts (assay_compound_id, column_description_id, value) VALUES (#{slice.join('), (')})")
+        end
+      end
+      rows.size
+    end
+  end
+
   def leave_resource(key, id)
     synchronize do
       @connections[key].delete(id)
@@ -184,6 +242,23 @@ class DataBaseServer < Monitor
         column_description.unit = tid.testedConcentration.unit
       end
       assay.column_descriptions << column_description
+  end
+
+  # {compound id => assays_compounds id} of an assay.
+  def assay_compound_ids(assay_id, compound_ids)
+    result = {}
+    return result if compound_ids.empty?
+    AssayCompound.where(:assay_id => assay_id, :compound_id => compound_ids).select('id, compound_id').each do |ac|
+      result[ac.compound_id] ||= ac.id
+    end
+    result
+  end
+
+  # Cleaned value of a column in a row (as the per-row methods do).
+  def cell(values, header, column)
+    index = header[column]
+    value = index && values[index]
+    value && value.gsub(/"|\s+$/, '')
   end
 
   def get_assay_compound(aid, cid)

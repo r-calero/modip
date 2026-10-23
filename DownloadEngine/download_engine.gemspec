@@ -2,7 +2,7 @@ require 'rubygems'
 
 spec = Gem::Specification.new do |s|
     s.name = 'download_engine'
-    s.version = '2.0.0'
+    s.version = '2.1.0'
     s.summary = "DownloadEngine provide a way to connect to Pubchem data base and download assays and compounds for a specific query"
     s.description = "Downloads PubChem assays and compounds through PUG REST and NCBI E-utilities."
     s.files = Dir.glob("lib/**/*.rb") + ["README", "LICENSE"]

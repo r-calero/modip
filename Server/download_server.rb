@@ -53,7 +53,8 @@ class DownloadServer
   def start_download(id, query, target, filter, min_date, max_date)
     begin
       @download_engines[id] ||= DownloadEngine.new(@database_server, self, @assays_root, @compound_2d_root, @compound_3d_root, @proxy)
-      @process[id] = {:process_assays => 0, :process_compounds => 0, :total_assays => 0, :total_compounds => 0}
+      @process[id] = {:process_assays => 0, :process_compounds => 0, :total_assays => 0, :total_compounds => 0,
+                      :completed_assays => 0, :assays => {}}
       if @workers.size < @process_number
         params = ParamsDump.new(id, query, target, filter, min_date, max_date)
         socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
@@ -81,6 +82,7 @@ class DownloadServer
     if download
       download.stop()
       @workers.delete(id) if @workers[id]
+      @process.delete(id)
       puts "stopped download #{id}"
       true
     else
@@ -111,6 +113,18 @@ class DownloadServer
     @process[id]
   end
 
+  # Progress of a running download, or nil when it is not running:
+  #   percent = (completed assays + done fraction of the assays in progress) / assays
+  def progress(id)
+    p = @process[id]
+    return nil unless p
+    running = p[:assays].values.inject(0.0) { |sum, (done, total)| sum + (total.to_i > 0 ? [done.to_f / total, 1.0].min : 0.0) }
+    total = p[:total_assays].to_i
+    percent = total > 0 ? [((p[:completed_assays] + running) * 100.0 / total).round(1), 100.0].min : 0.0
+    { 'percent' => percent, 'total_assays' => total, 'completed_assays' => p[:completed_assays],
+      'assays_in_progress' => p[:assays].size, 'compounds_done' => p[:process_compounds] }
+  end
+
   #Use only from provide management script
   def set_proxy(proxy)
     @download_engines.values.each do |d|
@@ -120,15 +134,26 @@ class DownloadServer
 
   def notify(*args)
     args.each do |notification|
-     if notification.class == AssayNotificationClass and (notification.event == "AssayInserted" or notification.event == "AssayFailed")
-       @process[notification.query_id][:process_assays] += 1
+     p = @process[notification.query_id]
+     if p.nil?
+       # download stopped or finished: nothing to count
+     elsif notification.class == AssayNotificationClass and (notification.event == "AssayInserted" or notification.event == "AssayFailed")
+       p[:process_assays] += 1
      elsif notification.class == CompoundNotificationClass and notification.event != "CompoundWarning"
-       @process[notification.query_id][:process_compounds] += 1
+       p[:process_compounds] += 1
      elsif notification.class == CountNotificationClass
-       if notification.event == "AssayCount"
-      @process[notification.query_id][:total_assays] = notification.total
-     else
-        @process[notification.query_id][:total_compounds] = notification.total
+       aid = notification.respond_to?(:aid) ? notification.aid : nil
+       case notification.event
+       when "AssayCount"
+         p[:total_assays] = notification.total
+       when "CompoundCount"
+         p[:total_compounds] = notification.total
+         p[:assays][aid] = [0, notification.total.to_i] if aid
+       when "CompoundProgress"
+         p[:assays][aid][0] = notification.total.to_i if aid && p[:assays][aid]
+       when "AssayCompleted"
+         p[:completed_assays] += 1
+         p[:assays].delete(aid)
        end
      elsif notification.class == FinishedNotificationClass
        puts "finished #{notification.query_id}"

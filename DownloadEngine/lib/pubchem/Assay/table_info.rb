@@ -1,55 +1,53 @@
 require 'csv'
 
+# Assay data table (CSV written by AssayTableNormalizer). The file is read as
+# a stream, so big assays (hundreds of thousands of rows) do not have to fit
+# in memory. Only rows with a CID are returned.
 class TableInfo
-  @@result_type = "//PC-ResultType"
-  @@tid = "PC-ResultType_tid"
-  @@tid_name = "PC-ResultType_name"
-  @@sid = "SID"
   @@cid = "CID"
-  @@comment = "Comment"
-  @@bio_assay_source = "BioAssay_Source"
-  
-  
-  attr_accessor :header , :path
+
+  attr_accessor :header, :path
+
   def initialize(dir)
     @path = dir
-    #@file = File.open(dir)
-    #@header = {}
-    #arr = @file.readline.split(',')
-    #for i in (0 .. arr.length - 1)
-    #	@header[arr[i].gsub("\"",'').chomp] = i
-    #end
-    #@elements = []
-    #@file.each do |line|
-    # @elements << line.split(',')
-    #end
-
-    @table = CSV.read(dir, headers: true)
+    first = CSV.open(dir, 'r') { |csv| csv.shift } || []
     @header = {}
-    @table.headers().each_with_index do |head, index|
+    first.each_with_index do |head, index|
       @header[head] = index
     end
-
   end
 
+  # Number of rows with a CID.
   def length
-      @size ||= get_size()
-      return @size
+    @size ||= begin
+      count = 0
+      each_row { count += 1 }
+      count
     end
+  end
 
-    def values()
-      @table.each do |row|
-        yield row if row[@@cid]
+  def values
+    each_row { |row| yield row }
+  end
+
+  # Yields arrays of up to `size` rows.
+  def each_batch(size)
+    batch = []
+    each_row do |row|
+      batch << row
+      if batch.size >= size
+        yield batch
+        batch = []
       end
     end
+    yield batch unless batch.empty?
+  end
 
-    private
-    def get_size()
-      count = 0;
-      @table.each do |row|
-        count +=1 if row[@@cid]
-      end
-      return count
+  private
+
+  def each_row
+    CSV.foreach(@path, :headers => true) do |row|
+      yield row if row[@@cid]
     end
-
+  end
 end

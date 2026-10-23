@@ -38,7 +38,7 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.2.0)
-    download_engine (2.0.0)
+    download_engine (2.1.0)
       entrez
     entrez (0.5.8.3)
       httparty

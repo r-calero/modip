@@ -15,8 +15,7 @@ class QueriesController < ApplicationController
     @queries = Query.where(:user_id => params[:user_id]).page(params[:page]).per(5)
     @queries.each do |query|
       if(running[query.id] = PIAM::Application::QUERY_MANAGER.downloading(query.id))
-        info = PIAM::Application::QUERY_MANAGER.get_process(query.id)
-        progress[query.id] = info
+        progress[query.id] = PIAM::Application::QUERY_MANAGER.get_progress(query.id)
       end
     end
     render :locals => {:progress => progress, :running => running}
@@ -125,11 +124,16 @@ class QueriesController < ApplicationController
       result['time'] = time
       result['remaining_time'] = time.values.sum
       result['channel'] = @query.id
-      result['dir'] = download_notification_query_path(:id => @query.id)
+      result['dir'] = progress_query_path(:id => @query.id, :format => :json)
       render :text => "event: remaining_time\nretry: #{60000}\ndata: #{JSON.dump(result)}\n\n"
     else
       render :text => "event: stop\ndata: #{JSON.dump({:channel => params[:id].to_i})}\n\n"
     end
+  end
+
+  # GET /queries/:id/progress.json (polled by the queries page every 2 seconds)
+  def progress
+    render :json => PIAM::Application::QUERY_MANAGER.get_progress(@query.id)
   end
 
   #GET /queries/:id/download_notification(.:format)

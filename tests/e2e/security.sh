@@ -68,6 +68,8 @@ for i in $(seq 1 40); do sleep 5; [ "$(sql "select count(*) from finished_notifi
 check "assay downloaded" "$(sql "select count(*) from assays where aid='1000'")" "1"
 check "57 compounds stored" "$(sql "select count(*) from compounds")" "57"
 check "download notifications saved" "$(sql "select count(*) > 50 from notifications where query_id=$Q")" "1"
+check "57 assay/compound rows" "$(sql "select count(*) from assays_compounds ac join assays a on a.id=ac.assay_id where a.aid='1000'")" "57"
+check "1653 readouts (same as the row-by-row code)" "$(sql "select count(*) from user_readouts ur join assays_compounds ac on ac.id=ur.assay_compound_id join assays a on a.id=ac.assay_id where a.aid='1000'")" "1653"
 
 section "Registration protection"
 t=$(token bot1 /users/new); f=$(ftoken bot1)

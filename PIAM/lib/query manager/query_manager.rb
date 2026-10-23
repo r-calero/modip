@@ -56,6 +56,21 @@ class QueryManager < NotificationManager
     @download_server.downloading(channel)
   end
 
+  # Progress of a query download for the progress bar (see DownloadServer#progress):
+  # {status: running|complete|stopped|idle, percent, total_assays, completed_assays, ...}
+  def get_progress(query_id)
+    info = begin
+      @download_server.progress(query_id)
+    rescue DRb::DRbError
+      nil
+    end
+    return info.merge('status' => 'running', 'running' => true) if info
+    finished = Notification.where(:query_id => query_id, :event => %w(Finished Stop)).order('id DESC').first
+    status = finished ? (finished.event == 'Stop' ? 'stopped' : 'complete') : 'idle'
+    { 'status' => status, 'running' => false, 'percent' => (status == 'complete' ? 100.0 : 0.0),
+      'message' => finished && finished.message }
+  end
+
   def get_process(channel)
     observer = @downloads_observers[channel]
     [observer.process_assays, observer.total_assays, observer.process_compounds, observer.total_compounds]

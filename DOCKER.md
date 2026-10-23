@@ -232,6 +232,24 @@ docker compose run --rm migrate      # aplicarlas a mano
 - Los receptores se pueden subir ya preparados (`.pdbqt`) o como `.pdb`: MODIP
   los prepara con AutoDockTools y añade los hidrógenos polares.
 
+## Rendimiento de las descargas
+
+- Los ensayos de una consulta se descargan en paralelo (`MODIP_DOWNLOAD_THREADS`,
+  2 por defecto) respetando el límite de PubChem (5 peticiones/s por IP).
+- Los compuestos se piden por lotes de 100 (una petición para los registros 3D
+  y otra para los 2D), y las filas de los ensayos se guardan por lotes, con
+  índices nuevos en MySQL (`compounds.cid`, `assays.aid`, etc.).
+- El paso más lento es convertir a 3D los compuestos que PubChem no tiene en
+  3D (Open Babel 2.3, unos 40 s por molécula). Van de uno en uno
+  (`MODIP_BABEL_PROCESSES=1`): Open Babel ya usa varios núcleos y en paralelo
+  se frenan entre sí. Cada conversión tiene un máximo de `MODIP_BABEL_TIMEOUT`
+  segundos (300); si se supera, el compuesto se guarda en 2D con un aviso.
+- En el docking, cada ligando se prepara una vez y se reutiliza
+  (`data/Ligands`).
+- La barra de progreso de las consultas la calcula el servidor de descargas
+  (ensayos completados más la fracción de los que están en curso) y la página
+  la consulta cada 2 segundos.
+
 ## Notas
 
 - La web corre en un único proceso Puma con hilos (`PUMA_MIN_THREADS`/

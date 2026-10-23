@@ -1,4 +1,4 @@
-== DownloadEngine 2.0.0
+== DownloadEngine 2.1.0
 
 Downloads PubChem assays and compounds for a query and stores them through
 the MODIP DataBaseServer.

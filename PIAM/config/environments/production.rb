@@ -16,7 +16,8 @@ PIAM::Application.configure do
   config.assets.compress = true
 
   # Don't fallback to assets pipeline if a precompiled asset is missed
-  config.assets.compile = true
+  # Assets are precompiled in the Docker image: no compilation per request.
+  config.assets.compile = false
 
   # Generate digests for assets URLs
   config.assets.digest = true
@@ -50,7 +51,8 @@ PIAM::Application.configure do
   # config.action_controller.asset_host = "http://assets.example.com"
 
   # Precompile additional assets (application.js, application.css, and all non-JS/CSS are already added)
-  # config.assets.precompile += %w( search.js )
+  # Assets that views include on their own (besides application.js/.css).
+  config.assets.precompile += %w( home.js queries.js spinner.js users.js compounds.css assays.css queries.css users.css )
 
   # Disable delivery errors, bad email addresses will be ignored
   # config.action_mailer.raise_delivery_errors = false

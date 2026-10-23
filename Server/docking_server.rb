@@ -2,6 +2,7 @@ require_relative 'schema'
 require_relative 'drb_acl'
 require_relative 'docking_queue'
 require 'zlib'
+require 'fileutils'
 require 'stringio'
 require 'rubygems/package'
 require 'docking'
@@ -199,24 +200,38 @@ class DockingServer
   end
 
   def auto_docking(key, receptor_pdbqt, sdf_3d_dir, params, code)
-    name, _ = File.basename(sdf_3d_dir).split('.')
-    name =  "#{code}_#{name}"
-    mol2 = DockingManager.format_type[:mol2]
-    pdbqt = DockingManager.format_type[:pdbqt]
-    mol2_output = "#{name}.#{mol2}"
-    @running_docking[key][0] << mol2_output
-    @docking.babel(sdf_3d_dir, mol2_output, DockingManager.format_type[:sdf], mol2)
-    ligand_pdbqt = "#{name}.#{pdbqt}"
-    @running_docking[key][0] << ligand_pdbqt
-    @docking.prepare_ligand(mol2_output, ligand_pdbqt)
-    File.delete(mol2_output)
-    @running_docking[key][0].delete(mol2_output)
+    ligand_pdbqt = cached_ligand(key, sdf_3d_dir, code)
     params = {:receptor => receptor_pdbqt, :ligand => ligand_pdbqt}.merge(params)
     @docking.autodock_vina(params)
-    File.delete(ligand_pdbqt)
-    @running_docking[key][0].delete(ligand_pdbqt)
-    [params[:out] ? params[:out] : "#{name}_#{out}.#{pdbqt}", params[:log]]
+    [params[:out], params[:log]]
+  end
 
+  # Ligand PDBQT of a compound, prepared once (Open Babel + prepare_ligand4)
+  # and reused for every receptor and docking job: data/Ligands/<cid>.pdbqt.
+  def cached_ligand(key, sdf_3d_dir, code)
+    folder = File.join(File.dirname(@target_root), "Ligands")
+    FileUtils.mkdir_p(folder)
+    name = File.basename(sdf_3d_dir).split('.').first
+    ligand = File.join(folder, "#{name}.pdbqt")
+    return ligand if File.size?(ligand) && File.mtime(ligand) >= File.mtime(sdf_3d_dir)
+
+    # Temporary files next to the cache, so the final rename stays on the same
+    # file system (data/ is a separate Docker volume).
+    work = File.join(folder, ".#{code}_#{name}_#{Thread.current.object_id}")
+    mol2 = "#{work}.#{DockingManager.format_type[:mol2]}"
+    pdbqt = "#{work}.#{DockingManager.format_type[:pdbqt]}"
+    @running_docking[key][0] << mol2 << pdbqt
+    begin
+      @docking.babel(sdf_3d_dir, mol2, DockingManager.format_type[:sdf], DockingManager.format_type[:mol2])
+      @docking.prepare_ligand(mol2, pdbqt)
+      raise "the ligand of #{name} could not be prepared" unless File.size?(pdbqt)
+      File.rename(pdbqt, ligand)
+    ensure
+      [mol2, pdbqt].each { |f| File.delete(f) if File.exist?(f) }
+      @running_docking[key][0].delete(mol2)
+      @running_docking[key][0].delete(pdbqt)
+    end
+    ligand
   end
 
   def babel(input, output)

@@ -5,40 +5,43 @@
  * Time: 3:58 PM
  * To change this template use File | Settings | File Templates.
  */
-sources = {};
-sources_assays_progress = {};
-sources_compounds_progress = {};
-sources_total_compounds = {};
-sources_total_assays = {};
-
 schedule_sources = {};
 
-function start_download_service(channel, dir, assay_progress, total_assays, compound_progress, total_compounds){
-    var total_assay = total_assays != 'unknown' ? parseInt(total_assays) : 100;
-    var total_compound = total_compounds != 'unknown' ? parseInt(total_compounds) : 100;
+/*----------------------------- download progress --------------------------------------------*/
+// The download server computes the progress of each query (assays may run in
+// parallel); the page reads it every 2 seconds (QueriesController#progress).
+download_polls = {};
+
+function start_download_progress(channel, url) {
     var key = parseInt(channel);
-    sources_assays_progress[key] = parseInt(assay_progress);
-    sources_compounds_progress[key] = parseInt(compound_progress);
-    sources_total_compounds[key] = total_compound;
-    sources_total_assays[key] = total_assay;
-    var source = new EventSource(dir);
-    sources[key] = source;
+    if (download_polls[key]) { return; }
+    download_polls[key] = { url: url, idle: 0 };
+    setTimeout(function () { poll_download(key); }, 2000);
+}
 
-    source.addEventListener('AssayCount', assay_count, false);
-    source.addEventListener('AssayProcessed', assay_process, false);
-    source.addEventListener('AssayFailed', assay_process, false);
-    source.addEventListener('CompoundCount', compound_count, false);
-    source.addEventListener('CompoundInserted', compound_process, false);
-    source.addEventListener('CompoundProcessed', compound_process, false);
-    source.addEventListener('CompoundFailed', compound_process, false);
-    source.addEventListener('Stop', stop, false);
-    source.addEventListener('Finished', finished, false);
-
-    $(document).ready(function(){
-        var progress = sources_compounds_progress[key]/ sources_total_compounds[key];
-        $("#progressbar-" + key).css('width', ( (sources_assays_progress[key] + progress)/ sources_total_assays[key]) * 100 + "%");
-    }) ;
-
+function poll_download(key) {
+    var poll = download_polls[key];
+    if (!poll) { return; }
+    $.getJSON(poll.url).done(function (p) {
+        if (!download_polls[key]) { return; }
+        $("#progressbar-" + key).css("width", p.percent + "%");
+        if (p.running) {
+            $("#status-" + key).text("running");
+            if (p.total_assays) {
+                $("#query-info-" + key).text(p.completed_assays + " of " + p.total_assays + " assays (" + p.percent + "%)");
+            }
+        } else if (p.status === "idle" && poll.idle < 3) {
+            poll.idle += 1; // the download may not have started yet
+        } else {
+            $("#status-" + key).text(p.status === "idle" ? "stop" : p.status);
+            if (p.status === "complete") { $("#query-info-" + key).text("download complete"); }
+            stop_download_progress(key);
+            return;
+        }
+        setTimeout(function () { poll_download(key); }, 2000);
+    }).fail(function () {
+        setTimeout(function () { poll_download(key); }, 5000);
+    });
 }
 
 function start_see(key) {
@@ -49,85 +52,17 @@ function start_see(key) {
     $("#start-" + key + "> a:first").hide();
 }
 
-function assay_count(event){
-    var obj = JSON.parse(event.data);
-    var key = obj["channel"];
-    sources_total_assays[key] = obj["total"];
-
-    console.log("Total Assay = " + sources_total_assays[key]);
-
-    sources_assays_progress[key] = 0;
-    sources_compounds_progress[key] = 0;
-}
-
-function assay_process(event){
-    console.log("assay processed");
-
-    var key = get_key(event);
-    sources_assays_progress[key] += 1;
-    $("#progressbar-" + key).css('width', (sources_assays_progress[key]/sources_total_assays[key]) * 100 + "%");
-}
-
-function compound_count(event){
-    var obj = JSON.parse(event.data);
-    var key = obj["channel"];
-    sources_total_compounds[key] = obj["total"];
-
-    console.log("compound count = " + " " + obj["total"]);
-
-    sources_compounds_progress[key] = 0;
-}
-
-function compound_process(event){
-    console.log("processing compound !!!");
-
-    var key = get_key(event);
-    sources_compounds_progress[key] += 1;
-    var progress = sources_compounds_progress[key]/sources_total_compounds[key];
-    if(progress == 1){
-        sources_assays_progress[key] += 1;
-        $("#progressbar-" + key).css('width', (sources_assays_progress[key]/sources_total_assays[key]) * 100 + "%");
-    }
-    else{
-        $("#progressbar-" + key).css('width', ((sources_assays_progress[key] + progress)/sources_total_assays[key]) * 100 + "%" );
-    }
-
-}
-
-function finished(event){
-    var key = get_key(event);
-    $("#status-" + key).text('complete');
-    stop_sse(key);
-}
-
-function stop(event){
-
-    console.log("query stopped");
-
-
-    var key = get_key(event);
-    $("#status-" + key).text('stop');
-    stop_sse(key);
-}
-
-function stop_sse(key){
-    $("#start-" + key + "> label:first").hide();
-    $("#stop-" + key + "> a:first").hide();
-    $("#start-" + key + "> a:first").show();
-    $("#stop-" + key + "> label:first").show();
-    sources[key].close();
-    delete sources[key];
-    delete sources_assays_progress[key];
-    delete sources_total_assays[key];
-    delete sources_compounds_progress[key];
-    delete sources_total_compounds[key];
-}
-
 function get_key(event){
     return JSON.parse(event.data)["channel"];
 }
 
-
+function stop_download_progress(key){
+    $("#start-" + key + "> label:first").hide();
+    $("#stop-" + key + "> a:first").hide();
+    $("#start-" + key + "> a:first").show();
+    $("#stop-" + key + "> label:first").show();
+    delete download_polls[key];
+}
 
 /*----------------------------- service for schedule queries --------------------------------------------*/
 
@@ -152,7 +87,7 @@ function remaining_time(event) {
         schedule_sources[key].close();
         delete schedule_sources[key];
         start_see(key);
-        start_download_service(obj["channel"], obj["dir"], 0, "unknown", 0, "unknown")
+        start_download_progress(obj["channel"], obj["dir"]);
     }
 
 }
@@ -170,7 +105,7 @@ $(document).ready(function(){
     $('.stop-link').click(function(){
         var key = parseInt($(this).attr('channel'));
         $("#status-" + key).text('stop');
-        stop_sse(key);
+        stop_download_progress(key);
         $("#progressbar-" + key).css('width', '0');
 
     })
@@ -183,7 +118,8 @@ $(document).ready(function(){
         var current_obj = $(this);
         var key = current_obj.attr('channel');
         start_see(key);
-        start_download_service(current_obj.attr('channel'), current_obj.attr('dir'), 0, 'unknown', 0, 'unknown')
+        $("#progressbar-" + key).css('width', '0');
+        start_download_progress(key, current_obj.attr('dir'));
     })
 });
 

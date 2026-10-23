@@ -159,6 +159,26 @@ class ServiceRest
     @client.url_for("compound/cid/#{listKey}/#{format}", params)
   end
 
+  # SDF records of many compounds in one request (PUG REST accepts a list of
+  # CIDs). Returns { cid => record text }; compounds without a 3D conformer
+  # are simply missing when use3D is true.
+  def download_compound_records(cids, use3D = true)
+    return {} if cids.empty?
+    text = @client.post("compound/cid/SDF?record_type=#{use3D ? '3d' : '2d'}", 'cid' => cids.join(','))
+    split_sdf(text)
+  rescue PubChem::NotFoundError
+    {}
+  end
+
+  def split_sdf(text)
+    records = {}
+    text.to_s.split(/^\$\$\$\$\r?$\n?/).each do |record|
+      cid = record[/^> <PUBCHEM_COMPOUND_CID>\r?\n(\d+)/, 1]
+      records[cid] = record.sub(/\A\s*\n/, '') + "$$$$\n" if cid
+    end
+    records
+  end
+
   # Downloads a URL returned by GetSCIDUrl/GetAssayUrl into a file.
   def download(url, path)
     @client.download(url, path)

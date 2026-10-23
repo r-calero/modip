@@ -91,6 +91,7 @@ PIAM::Application.routes.draw do
   controller :queries do
     get 'queries/:id/schedule_notification' => :schedule_notification, :as => :schedule_notification_query
     get 'queries/:id/download_notification' => :download_notification, :as => :download_notification_query
+    get 'queries/:id/progress' => :progress, :as => :progress_query
     # Actions that change state are POST, so they are covered by CSRF protection.
     post 'queries/:id/start' => :start, :as => :start_query
     post 'queries/:id/stop' => :stop, :as => :stop_query
