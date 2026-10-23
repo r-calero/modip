@@ -1,3 +1,4 @@
+<% content_for :title, "Docking job ##{@job.id}" %>
 <div class="row-fluid">
   <h3>Docking job #<%= @job.id %> <small><%= @job.target ? @job.target.name : '' %></small>
     <span id="job-status"><%= docking_status_label(@job.status) %></span></h3>

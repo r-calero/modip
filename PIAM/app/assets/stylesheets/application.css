@@ -106,8 +106,22 @@ body{
 }
 .footer{
     padding: 20px;
+    margin-top: 30px;
+    border-top: 1px solid #e5e5e5;
     text-align: center;
-    color: #000000;
+    color: #555555;
+    font-size: 13px;
+}
+
+/* 2D structures from PubChem */
+img.structure-image{
+    background-color: #ffffff;
+    padding: 2px;
+}
+
+/* pose viewer and docking job pages */
+#pose-models tr.info td, #job-log pre{
+    font-size: 12px;
 }
 
 .footer p{

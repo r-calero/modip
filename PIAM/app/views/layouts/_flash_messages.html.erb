@@ -1,0 +1,9 @@
+<%# Flash messages of every page (success: notice, problems: alert). Not named _flash: the partial local would hide the flash helper. %>
+<% { :notice => 'alert-info', :alert => 'alert-error' }.each do |kind, css| %>
+  <% if flash[kind].present? %>
+    <div class="alert <%= css %>">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">&times;</button>
+      <%= flash[kind] %>
+    </div>
+  <% end %>
+<% end %>

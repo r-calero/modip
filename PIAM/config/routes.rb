@@ -21,11 +21,16 @@ PIAM::Application.routes.draw do
   resources :targets, :except => [:update, :edit] do
     member do
       get 'poses'
+      get 'energies'
     end
     resources :prepare_receptors 
   end
   
   resources :receptor_types
+
+  # 3D viewer of docking poses
+  get 'poses' => 'poses#show', :as => :poses
+  get 'poses/data' => 'poses#data', :as => :data_poses
 
   resources :cycles
 

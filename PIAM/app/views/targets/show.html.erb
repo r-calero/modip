@@ -1,11 +1,5 @@
+<% content_for :title, @target.name %>
 <div class ="row-fluid">
-	<% if notice %>
-		<div class="alert alert-success">
-			<button class="close" data-dismiss="alert" type="button">×</button>
-			<strong>Success!</strong>
-			<p id="notice"><%= notice %></p>
-		</div>
-	<% end %>
 </div>
 <div class="row-fluid">
 	<div class="span12 info-header">
@@ -24,9 +18,45 @@
 	<%= render(:partial => "layouts/target", :object => @target, :locals => {:action => true})%>
 </div>
 <br/>
+<% if admin? %>
 <div class="row-fluid">
-  <%= link_to 'New Receptor', new_target_prepare_receptor_path(@target) %>
+  <%= link_to 'New Receptor', new_target_prepare_receptor_path(@target), :class => 'btn' %>
 </div>
+<% end %>
+<div class="row-fluid">
+  <div class="span12 info-header">
+    <h4>Docking results</h4>
+  </div>
+</div>
+<div class="row-fluid">
+  <p id="energy-summary" class="muted">Loading&hellip;</p>
+  <div style="position: relative; height: 320px;"><canvas id="energy-chart" aria-label="Distribution of the best docking energy per compound"></canvas></div>
+  <p>
+    <%= link_to 'Ranking list', compound_rank_user_url(:target => { :target_id => @target.id }), :method => :post, :class => 'btn btn-small' %>
+    <%= link_to 'Download all poses (.tar.gz)', poses_target_path(@target), :class => 'btn btn-small' %>
+  </p>
+</div>
+<script src="/javascripts/vendor/Chart-2.9.4.min.js"></script>
+<script type="text/javascript">
+  $(function () {
+    var colors = ["#2c7fb8", "#e6550d", "#31a354", "#756bb1", "#de2d26", "#636363"];
+    $.getJSON("<%= energies_target_path(@target, :format => :json) %>").done(function (data) {
+      if (!data.series.length) { $("#energy-summary").text("No docking results for this target yet."); $("#energy-chart").parent().hide(); return; }
+      $("#energy-summary").text($.map(data.series, function (s) {
+        return s.name + ": " + s.compounds + " compounds, best " + s.best.toFixed(1) + " kcal/mol";
+      }).join(" · "));
+      new Chart(document.getElementById("energy-chart"), {
+        type: "bar",
+        data: { labels: data.labels, datasets: $.map(data.series, function (s, i) {
+          return { label: s.name, data: s.counts, backgroundColor: colors[i % colors.length] };
+        }) },
+        options: { maintainAspectRatio: false, legend: { position: "bottom" },
+          scales: { xAxes: [{ scaleLabel: { display: true, labelString: "Best affinity (kcal/mol, bins of " + data.bin + ")" } }],
+                    yAxes: [{ ticks: { beginAtZero: true, precision: 0 }, scaleLabel: { display: true, labelString: "Compounds" } }] } }
+      });
+    });
+  });
+</script>
 <br/>
 <div class="row-fluid">
     <%= link_to 'Back', targets_path %>

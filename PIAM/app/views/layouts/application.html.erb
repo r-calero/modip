@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MODIP</title>
+  <title><%= page_title %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
@@ -31,9 +31,9 @@
            <div class="nav-collapse collapse navbar-inverse-collapse">
            		<div class="span3">
       		      <ul class="nav">
-      			      <li class="active"><%= link_to "Home", home_path %></li>
-			            <li><%= link_to "About", about_path %></li>
-            			<li><%= link_to "Help", help_path %></li></li>
+                  <%= nav_item 'Home', home_path, controller_name == 'home' && action_name == 'index' %>
+                  <%= nav_item 'About', about_path, action_name == 'about' %>
+                  <%= nav_item 'Help', help_path, action_name == 'help' %>
           			</ul>
           		</div>
              <div class="span3">
@@ -103,6 +103,7 @@
         </div>
         <div class="content-body span9">
           <!--Body content-->
+          <%= render 'layouts/flash_messages' unless controller_name == 'home' && action_name == 'errors' %>
           <%= yield %>
         </div>
       </div>

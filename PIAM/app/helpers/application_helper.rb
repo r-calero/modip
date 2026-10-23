@@ -1,5 +1,21 @@
 module ApplicationHelper
 
+  # <li> of the top navigation bar, marked active on its own pages.
+  def nav_item(label, path, active)
+    content_tag(:li, link_to(label, path), :class => (active ? 'active' : nil))
+  end
+
+  # Page title: "Section - MODIP" (set with content_for :title).
+  def page_title
+    content_for?(:title) ? "#{content_for(:title)} - MODIP" : "MODIP - Molecular Docking Integrated Platform"
+  end
+
+  # 2D depiction of a compound, served by PubChem.
+  def structure_image(cid, size = 200)
+    image_tag("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/#{cid.to_i}/PNG?image_size=#{size.to_i}x#{size.to_i}",
+              :alt => "2D structure of CID #{cid}", :width => size, :height => size, :class => 'img-polaroid structure-image')
+  end
+
 	def delete_dialog(id, url, text = "Destroy", ok_text = "Delete", cancel_text = "Cancel", method = :post, header = "Delete a resource", body = "Are you sure?")
 	    
 	  #<!-- Button to trigger modal -->

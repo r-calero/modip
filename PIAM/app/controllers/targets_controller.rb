@@ -52,6 +52,24 @@ class TargetsController < ApplicationController
   end
 
   MAX_ARCHIVE_FILES = 5000
+  ENERGY_BIN = 0.5 # kcal/mol
+
+  # GET /targets/1/energies.json: histogram of the best energy of each docked
+  # compound, per receptor type (for the chart of the target page).
+  def energies
+    target = Target.find(params[:id])
+    rows = ReceptorCompound.joins(:prepare_receptor => :receptor_type).
+      where('prepare_receptors.target_id' => target.id).
+      group('receptor_types.name, receptor_compounds.compound_id').
+      select('receptor_types.name AS receptor, MIN(receptor_compounds.value) AS best').to_a
+    bins = rows.map { |r| (r.best.to_f / ENERGY_BIN).floor * ENERGY_BIN }.uniq.sort
+    series = rows.group_by { |r| r.receptor }.sort.map do |name, list|
+      counts = Hash.new(0)
+      list.each { |r| counts[(r.best.to_f / ENERGY_BIN).floor * ENERGY_BIN] += 1 }
+      { :name => name, :counts => bins.map { |b| counts[b] }, :best => list.map { |r| r.best.to_f }.min, :compounds => list.size }
+    end
+    render :json => { :labels => bins.map { |b| '%.1f' % b }, :bin => ENERGY_BIN, :series => series }
+  end
 
   # GET /targets/1/poses(?job_id=5): docking poses (.pdbqt) as a .tar.gz,
   # of the whole target or of the compounds of one docking job.

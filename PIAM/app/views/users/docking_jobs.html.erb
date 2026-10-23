@@ -1,3 +1,4 @@
+<% content_for :title, "My docking jobs" %>
 <h3>My docking jobs</h3>
 <% if @jobs.empty? %>
   <p>You have no docking jobs yet. <%= link_to 'Start a docking', docking_user_path(@user) %>.</p>
