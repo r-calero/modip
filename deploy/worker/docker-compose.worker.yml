@@ -1,0 +1,31 @@
+# Remote MODIP conversion worker (2D->3D with Open Babel).
+#
+# Runs on another machine of the private network and connects only to the
+# conversion broker of the main MODIP server, over mutual TLS. See README.md.
+#
+#   tar -xzf NAME.tar.gz          # certs/ and .env.worker, from the main server
+#   docker compose -f docker-compose.worker.yml up -d --build
+
+name: modip-worker
+
+services:
+  converter:
+    image: ${MODIP_IMAGE_PREFIX:-modip}/converter:${MODIP_IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: docker/ruby/Dockerfile
+      target: converter
+    platform: linux/amd64
+    init: true
+    tty: true
+    restart: unless-stopped
+    env_file: .env.worker
+    environment:
+      MODIP_WORKER_CERT: /certs/worker.crt
+      MODIP_WORKER_KEY: /certs/worker.key
+      MODIP_CA_CERT: /certs/ca.crt
+    volumes:
+      - ./certs:/certs:ro
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }

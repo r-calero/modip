@@ -6,12 +6,22 @@ class Compound < ActiveRecord::Base
   has_many :assay_compound
   has_many :assays, :through => :assay_compound, :source => :assay
   has_many :receptor_compound
+  has_many :conversion_jobs, :order => 'id'
   has_many :receptors, :through => :receptor_compound, :source => :prepare_receptor
 
 
 
   scope :_3d, where(:coordinate => '3D Coordinates')
 
+
+  def is_3d?
+    coordinate.to_s =~ /3D/i ? true : false
+  end
+
+  # Latest 2D -> 3D conversion of the compound, if any.
+  def last_conversion
+    conversion_jobs.last
+  end
 
   def self.sort_energy_range(target, filter_one, filter_two, filter_tree, sort_column = nil, sort_direction = 'desc')
     Compound.select("c.cid, l1.path AS path1, l2.path AS path2, l3.path AS path3, MIN(l1.value) AS bovine, MIN(l2.value) AS human, MIN(l3.value) AS parasite")

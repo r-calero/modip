@@ -64,11 +64,12 @@ class QueryManager < NotificationManager
     rescue DRb::DRbError
       nil
     end
-    return info.merge('status' => 'running', 'running' => true) if info
+    conversions = ConversionJob.summary_for_query(query_id)
+    return info.merge('status' => 'running', 'running' => true, 'conversions' => conversions) if info
     finished = Notification.where(:query_id => query_id, :event => %w(Finished Stop)).order('id DESC').first
     status = finished ? (finished.event == 'Stop' ? 'stopped' : 'complete') : 'idle'
     { 'status' => status, 'running' => false, 'percent' => (status == 'complete' ? 100.0 : 0.0),
-      'message' => finished && finished.message }
+      'message' => finished && finished.message, 'conversions' => conversions }
   end
 
   def get_process(channel)

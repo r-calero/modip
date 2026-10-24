@@ -22,6 +22,7 @@ class DockingQueue
     @thread = Thread.new do
       loop do
         begin
+          promote_waiting_jobs
           job = claim_next_job
           job ? run(job) : sleep(POLL_SECONDS)
         rescue Exception => e
@@ -40,6 +41,22 @@ class DockingQueue
   end
 
   private
+
+  # Waiting jobs whose 3D conversions have all ended (done, failed or timed
+  # out) are queued; compounds left in 2D are reported as not docked.
+  def promote_waiting_jobs
+    with_db do
+      DockingJob.where(:status => 'waiting').order(:id).each do |job|
+        cids = job.cid_list
+        pending = cids.empty? ? 0 : ConversionJob.where(:status => ConversionJob::PENDING).
+          joins(:compound).where(:compounds => { :cid => cids }).count
+        next if pending > 0
+        if DockingJob.where(:id => job.id, :status => 'waiting').update_all(:status => 'queued', :updated_at => Time.now) == 1
+          @logger.info("[docking queue] job #{job.id}: 3D conversions ended, queued")
+        end
+      end
+    end
+  end
 
   def claim_next_job
     with_db do

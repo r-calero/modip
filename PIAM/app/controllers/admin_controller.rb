@@ -1,4 +1,5 @@
-# Administration page: system summary, users and docking jobs of everyone.
+# Administration page: system summary, users, docking jobs of everyone and
+# the 2D -> 3D conversion queue.
 class AdminController < ApplicationController
   before_filter :require_admin
 
@@ -13,6 +14,30 @@ class AdminController < ApplicationController
     @jobs = DockingJob.group(:user_id).count
     @active_jobs = DockingJob.active.includes(:user, :target).order(:id)
     @recent_jobs = DockingJob.where("status NOT IN (?)", DockingJob::ACTIVE).includes(:user, :target).recent.limit(10)
+    @conversion_counts = ConversionJob.group(:status).count
+    @conversion_workers = ConversionJob.workers
+    @failed_conversions = ConversionJob.unsuccessful.includes(:compound).order('id DESC').limit(50)
+    @backfill_candidates = Compound.where("(coordinate IS NULL OR coordinate NOT LIKE '%3D%') AND path IS NOT NULL").
+      where('NOT EXISTS (SELECT 1 FROM conversion_jobs j WHERE j.compound_id = compounds.id)').count
+  end
+
+  # POST /admin/conversions/5/retry
+  def retry_conversion
+    job = ConversionJob.find(params[:id])
+    notice = job.retry!(ConversionJob.retry_timeout) ? "Conversion of CID #{job.compound.try(:cid)} queued again" : 'That conversion is not failed'
+    redirect_to admin_path(:anchor => 'conversions'), :notice => notice
+  end
+
+  # POST /admin/conversions/retry
+  def retry_conversions
+    count = ConversionJob.retry_all!(ConversionJob.retry_timeout)
+    redirect_to admin_path(:anchor => 'conversions'), :notice => "#{count} conversions queued again"
+  end
+
+  # POST /admin/conversions/backfill
+  def backfill_conversions
+    count = ConversionJob.backfill(ConversionJob.default_timeout)
+    redirect_to admin_path(:anchor => 'conversions'), :notice => "#{count} 2D compounds queued for their 3D conversion"
   end
 
   # DELETE /admin/users/5

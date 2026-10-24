@@ -101,6 +101,12 @@
 			<div class="progress" id= <%="progress-#{id}"%> >
               <div class="bar" id= <%="progressbar-#{id}" %> style="width: <%= running[id] ? progress[id]['percent'] : 0 %>%;"></div>
             </div>
+            <div class="conversion-progress" id="<%= "conversion-#{id}" %>" style="<%= 'display: none;' unless converting[id] %>">
+              <small class="muted" id="<%= "conversion-info-#{id}" %>"><%= conversion_progress_text(converting[id]) if converting[id] %></small>
+              <div class="progress progress-info progress-striped">
+                <div class="bar" id="<%= "conversion-bar-#{id}" %>" style="width: <%= converting[id] ? conversion_percent(converting[id]) : 0 %>%;"></div>
+              </div>
+            </div>
         </div>
         <% if running[id] %>
             <script type="text/javascript">
@@ -112,6 +118,9 @@
         <% else %>
             <script type="text/javascript">
               $("<%="#stop-#{id}"%>" + "> a:first").hide();
+              <% if converting[id] %>
+              start_download_progress("<%= id %>", "<%= progress_query_path(:id => id, :format => :json) %>");
+              <% end %>
             </script>
             <% if query.schedule  %>
                 <script type="text/javascript">

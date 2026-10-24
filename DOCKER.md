@@ -12,6 +12,11 @@ dentro de la red interna `modip`; solo nginx publica puertos.
                                       │    (PubChem REST)     (ActiveRecord)
                                       └──> docking ───────────────────────> mysql
                                            (Open Babel, Vina, AutoDockTools)
+
+ download ──(compuestos 2D)──> conversion_jobs (MySQL)
+                                      ▲
+ converter(es) ──TLS mutuo──> conversion-broker
+ (Open Babel; locales o en otros equipos de la red privada)
 ```
 
 | Servicio   | Qué ejecuta                  | dRuby (interno)          |
@@ -22,6 +27,9 @@ dentro de la red interna `modip`; solo nginx publica puertos.
 | `docking`  | `Server/docking_server.rb`   | `druby://docking:1997`   |
 | `web`      | PIAM (Rails) en Puma         | `druby://web:9100` (callbacks) |
 | `nginx`    | Proxy HTTPS                  | —                        |
+| `conversion-broker` | `Server/conversion_broker.rb` | `drbssl://conversion-broker:7443` (TLS mutuo) |
+| `converter` | `Server/conversion_worker.rb` (Open Babel) | — (cliente del broker) |
+| `certs`    | `deploy/conversion/certs.sh` (se ejecuta y termina) | — |
 
 `download` y `docking` comparten el volumen `modip_data` (`Server/data`), porque
 las rutas de los compuestos guardadas en MySQL apuntan a él.
@@ -127,7 +135,9 @@ docker compose up -d --build                 # actualizar tras un git pull
 - MySQL se publica solo en `127.0.0.1:${MYSQL_HOST_PORT}` del host, para
   administración (por ejemplo, para lanzar consultas SQL de diagnóstico).
 - Volúmenes: `mysql_data`, `modip_data` (ensayos, compuestos, dianas),
-  `download_log` (`Server/log/service.log`) y `web_log` (`PIAM/log`).
+  `download_log` (`Server/log/service.log`), `web_log` (`PIAM/log`) y
+  `modip_certs` (CA y certificados de las conversiones; incluye la clave
+  privada de la CA, conviene respaldarlo).
 
 ### Migrar una instalación existente
 
@@ -239,16 +249,84 @@ docker compose run --rm migrate      # aplicarlas a mano
 - Los compuestos se piden por lotes de 100 (una petición para los registros 3D
   y otra para los 2D), y las filas de los ensayos se guardan por lotes, con
   índices nuevos en MySQL (`compounds.cid`, `assays.aid`, etc.).
-- El paso más lento es convertir a 3D los compuestos que PubChem no tiene en
-  3D (Open Babel 2.3, unos 40 s por molécula). Van de uno en uno
-  (`MODIP_BABEL_PROCESSES=1`): Open Babel ya usa varios núcleos y en paralelo
-  se frenan entre sí. Cada conversión tiene un máximo de `MODIP_BABEL_TIMEOUT`
-  segundos (300); si se supera, el compuesto se guarda en 2D con un aviso.
+- Los compuestos que PubChem no tiene en 3D se guardan en 2D y se encolan
+  para convertirlos (ver *Conversiones 2D → 3D*), así la descarga no espera a
+  Open Babel.
 - En el docking, cada ligando se prepara una vez y se reutiliza
   (`data/Ligands`).
 - La barra de progreso de las consultas la calcula el servidor de descargas
   (ensayos completados más la fracción de los que están en curso) y la página
   la consulta cada 2 segundos.
+
+## Conversiones 2D → 3D
+
+Convertir a 3D con Open Babel (`--gen3D`) tarda unos 40 s por molécula, así
+que no se hace durante la descarga:
+
+1. La descarga guarda el compuesto en 2D, crea un trabajo en `conversion_jobs`
+   y sigue (evento `CompoundQueued3D`).
+2. Los workers (`converter`) piden trabajos al `conversion-broker`, convierten
+   y devuelven el SDF en 3D. El broker lo valida (mismo CID y número de átomos
+   pesados, coordenadas z no nulas, máximo 5 MB), lo guarda en
+   `data/Compounds/3D` y marca el compuesto como 3D (fuente MODIP).
+3. El docking que se lanza al terminar la descarga queda **waiting** mientras
+   haya conversiones pendientes de sus compuestos. Cuando todas terminan pasa a
+   la cola y dockea los que llegaron a 3D; los que quedaron en 2D aparecen en
+   el registro como no procesados.
+
+Detalles:
+
+- Un worker hace una conversión a la vez; se pueden poner más
+  (`MODIP_CONVERSION_LOCAL_WORKERS`, uno por cada 4 núcleos libres más o menos,
+  teniendo en cuenta que el docking corre en el mismo equipo). Cada conversión usa
+  `MODIP_BABEL_THREADS` hilos (4): con un hilo por núcleo, Open Babel se queda
+  casi parado en cuanto el docking usa la CPU (medido: más de 120 s frente a
+  unos 8 s con 4 hilos para la misma molécula).
+- Cada conversión tiene un máximo de `MODIP_BABEL_TIMEOUT` segundos (300). Si
+  se supera o falla, el compuesto queda en 2D y el trabajo en `timeout` o
+  `failed`. **No se reintenta solo**: en *Admin → 3D conversions* hay
+  *Retry* por trabajo y *Retry all*, con `MODIP_BABEL_RETRY_TIMEOUT` (900 s).
+- Si un worker deja de dar señales (heartbeat) durante
+  `MODIP_CONVERSION_LEASE` segundos (120), su trabajo vuelve a la cola; a la
+  segunda vez se marca como fallido. Un worker que se detiene devuelve su
+  trabajo a la cola.
+- *Admin → 3D conversions* muestra también los workers activos y un botón para
+  encolar los compuestos 2D descargados antes de existir la cola.
+- La barra de la consulta muestra una segunda barra con las conversiones, y la
+  ficha del compuesto indica si está en 3D o el estado de su conversión.
+- `MODIP_CONVERSION_MODE=inline` vuelve al comportamiento anterior (la
+  descarga convierte ella misma).
+
+### Seguridad del broker
+
+- Broker y workers se autentican con TLS mutuo (`drbssl://`). Todos los
+  certificados los firma una CA propia de la instalación que crea el servicio
+  `certs` en el primer arranque (volumen `modip_certs`).
+- El nombre (CN) del certificado del worker es su identidad y debe estar en
+  `MODIP_CONVERSION_WORKERS`; quitarlo lo revoca. Los workers comprueban que el
+  certificado del broker es `conversion-broker`.
+- Además hay una lista de redes permitidas (`MODIP_CONVERSION_ALLOW`, por
+  defecto rangos privados) y el puerto se publica solo en
+  `MODIP_CONVERSION_BIND` (`127.0.0.1` por defecto: solo workers locales).
+- Los workers no tienen acceso a MySQL ni al volumen de datos: reciben el SDF
+  en 2D y devuelven el 3D. Las horas de lease se calculan con el reloj de
+  MySQL, no con el de los workers.
+
+```bash
+docker compose run --rm certs list             # certificados emitidos
+docker compose run --rm certs renew-broker     # tras cambiar MODIP_CONVERSION_BROKER_HOSTS
+docker compose logs -f conversion-broker converter
+```
+
+### Workers en otros equipos
+
+Ver [deploy/worker/README.md](deploy/worker/README.md). En resumen: en el
+servidor se ajustan `MODIP_CONVERSION_BIND`, `MODIP_CONVERSION_PUBLIC_HOST` y
+`MODIP_CONVERSION_WORKERS`, se genera el paquete del worker con
+`docker compose run --rm -T certs worker NOMBRE > NOMBRE.tar.gz` y en el otro
+equipo se descomprime en `deploy/worker` y se arranca
+`docker compose -f docker-compose.worker.yml up -d --build`. El puerto 7443
+debe abrirse solo para los equipos de los workers.
 
 ## Notas
 

@@ -19,6 +19,7 @@
 
 <div class="row-fluid">
   <p>
+    <span id="job-waiting"><%= "Waiting for #{pluralize(@job.pending_conversions, '3D conversion')} of its compounds; compounds left in 2D are not docked." if @job.status == 'waiting' %></span>
     <span id="job-current"><%= "Docking compound #{@job.current_cid}..." if @job.current_cid %></span>
     <span id="job-message"><%= @job.message %></span>
   </p>
@@ -68,6 +69,7 @@
       $("#job-processed").text(job.processed);
       $("#job-total").text(job.total);
       $("#job-failed").text(job.failed > 0 ? "(" + job.failed + " without poses)" : "");
+      $("#job-waiting").text(job.status === "waiting" ? "Waiting for " + job.pending_conversions + " 3D conversion" + (job.pending_conversions === 1 ? "" : "s") + " of its compounds; compounds left in 2D are not docked." : "");
       $("#job-current").text(job.current_cid ? "Docking compound " + job.current_cid + "..." : "");
       $("#job-message").text(job.message || "");
       $("#job-status .docking-status").text(job.status).attr("class", "label docking-status " + (labels[job.status] || ""));
@@ -77,7 +79,7 @@
         $("#job-log tbody").append(row);
         lastLog = log.id;
       });
-      if (job.status !== "queued" && job.status !== "running") {
+      if (job.status !== "waiting" && job.status !== "queued" && job.status !== "running") {
         active = false;
         $("#job-progress").removeClass("active");
         $("form.docking-cancel").remove();

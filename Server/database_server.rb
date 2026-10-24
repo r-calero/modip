@@ -200,6 +200,24 @@ class DataBaseServer < Monitor
     end
   end
 
+  # Queues the 2D -> 3D conversion of a stored compound (once: a compound with
+  # a conversion already queued or running is not queued again).
+  def enqueue_conversion(cid, query_id = nil, priority = 10)
+    ActiveRecord::Base.connection_pool.with_connection do
+      compound = Compound.find_by_cid(cid.to_s)
+      return false unless compound
+      return true if ConversionJob.where(:compound_id => compound.id, :status => ConversionJob::PENDING).exists?
+      job = ConversionJob.new
+      job.compound_id = compound.id
+      job.query_id = query_id
+      job.priority = priority
+      job.status = 'queued'
+      job.timeout_seconds = (ENV['MODIP_BABEL_TIMEOUT'].to_s.strip.empty? ? 300 : ENV['MODIP_BABEL_TIMEOUT'].to_i)
+      job.save!
+      true
+    end
+  end
+
   def leave_resource(key, id)
     synchronize do
       @connections[key].delete(id)

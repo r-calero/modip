@@ -1,6 +1,6 @@
 module DockingJobsHelper
   STATUS_LABELS = {
-    'queued' => 'label-info', 'running' => 'label-warning', 'finished' => 'label-success',
+    'waiting' => 'label-inverse', 'queued' => 'label-info', 'running' => 'label-warning', 'finished' => 'label-success',
     'failed' => 'label-important', 'cancelled' => ''
   }
 

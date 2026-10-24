@@ -15,12 +15,13 @@ export COMPOSE_FILE=docker-compose.yml:docker-compose.apache.yml \
        MODIP_ADMIN_USERS=admin1 MODIP_FORCE_SSL=false \
        MODIP_CAPTCHA_SITE_KEY=1x00000000000000000000AA \
        MODIP_CAPTCHA_SECRET=1x0000000000000000000000000000000AA \
-       NGINX_AUTH_RATE=1000r/m NGINX_JOBS_RATE=1000r/m
+       NGINX_AUTH_RATE=1000r/m NGINX_JOBS_RATE=1000r/m \
+       MODIP_CONVERSION_WORKERS=local,lab-02
 
 docker compose down -v        # empty database
 docker compose up -d --build
 
-tests/e2e/security.sh && tests/e2e/docking.sh && tests/e2e/ui.sh && tests/e2e/downloads.sh
+tests/e2e/security.sh && tests/e2e/docking.sh && tests/e2e/downloads.sh && tests/e2e/conversion.sh && tests/e2e/ui.sh
 ```
 
 | Script | What it checks |
@@ -28,7 +29,8 @@ tests/e2e/security.sh && tests/e2e/docking.sh && tests/e2e/ui.sh && tests/e2e/do
 | `security.sh` | Roles and ownership, mass assignment, file access, CVE-2013-0156, registration and login protection, bcrypt, password reset, headers; downloads AID 1000 from PubChem |
 | `docking.sh` | PDB receptor preparation, docking queue and progress, cancel, restart recovery, exports, admin page |
 | `ui.sh` | Layout, flash messages, structure images, 3D viewer and energy chart (also in headless Chrome when available) |
-| `downloads.sh` | Several assays downloaded in parallel, download time, progress bar of the queries page (JSON and, with Chrome, the page itself) |
+| `downloads.sh` | Several assays downloaded in parallel, download time, progress bar of the queries page (JSON and, with Chrome, the page itself), conversions queued |
+| `conversion.sh` | 2D->3D conversion queue: docking jobs waiting for conversions, timeout, manual retry, mutual TLS (unknown, foreign and missing certificates, plain druby), validation of results, leases, worker shutdown, remote worker (`deploy/worker`), backfill |
 
 Optional variables: `BASE_URL` (default `http://127.0.0.1:8484`),
 `MAILPIT_URL` (to check e-mails sent to a [Mailpit](https://mailpit.axllent.org)

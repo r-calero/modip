@@ -32,4 +32,16 @@ module CompoundsHelper
 	end
   end
 
+  # 3D / 2D badge, with the state of the 2D -> 3D conversion.
+  def compound_dimension_badge(compound)
+    return content_tag(:span, '3D', :class => 'label label-success', :id => 'compound-dimension') if compound.is_3d?
+    job = compound.last_conversion
+    text, css, title = case job && job.status
+      when 'queued' then ['2D (3D conversion queued)', 'label-info', nil]
+      when 'running' then ['2D (converting to 3D)', 'label-warning', nil]
+      when 'failed', 'timeout' then ['2D (3D conversion failed)', 'label-important', job.error]
+      else ['2D', '', nil]
+    end
+    content_tag(:span, text, :class => "label #{css}", :id => 'compound-dimension', :title => title)
+  end
 end

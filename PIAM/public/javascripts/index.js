@@ -24,6 +24,7 @@ function poll_download(key) {
     if (!poll) { return; }
     $.getJSON(poll.url).done(function (p) {
         if (!download_polls[key]) { return; }
+        var converting = show_conversions(key, p.conversions);
         $("#progressbar-" + key).css("width", p.percent + "%");
         if (p.running) {
             $("#status-" + key).text("running");
@@ -35,8 +36,12 @@ function poll_download(key) {
         } else {
             $("#status-" + key).text(p.status === "idle" ? "stop" : p.status);
             if (p.status === "complete") { $("#query-info-" + key).text("download complete"); }
-            stop_download_progress(key);
-            return;
+            if (!converting) {
+                stop_download_progress(key);
+                return;
+            }
+            // Download finished, 3D conversions still running: keep polling.
+            if (!poll.ended) { poll.ended = true; stop_download_links(key); }
         }
         setTimeout(function () { poll_download(key); }, 2000);
     }).fail(function () {
@@ -56,12 +61,30 @@ function get_key(event){
     return JSON.parse(event.data)["channel"];
 }
 
+// Second bar: 3D conversions queued by the download. Returns true while
+// some are pending.
+function show_conversions(key, c) {
+    if (!c || !c.total) { return false; }
+    var done = c.total - c.pending;
+    var text = "3D conversions: " + c.done + " of " + c.total + " done";
+    if (c.failed > 0) { text += ", " + c.failed + " failed"; }
+    if (c.pending > 0) { text += ", " + c.pending + " pending (docking waits for them)"; }
+    $("#conversion-" + key).show();
+    $("#conversion-info-" + key).text(text);
+    $("#conversion-bar-" + key).css("width", (done * 100 / c.total) + "%");
+    return c.pending > 0;
+}
+
 function stop_download_progress(key){
+    stop_download_links(key);
+    delete download_polls[key];
+}
+
+function stop_download_links(key){
     $("#start-" + key + "> label:first").hide();
     $("#stop-" + key + "> a:first").hide();
     $("#start-" + key + "> a:first").show();
     $("#stop-" + key + "> label:first").show();
-    delete download_polls[key];
 }
 
 /*----------------------------- service for schedule queries --------------------------------------------*/

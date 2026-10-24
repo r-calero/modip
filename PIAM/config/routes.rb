@@ -11,6 +11,9 @@ PIAM::Application.routes.draw do
   get 'admin' => 'admin#index'
   delete 'admin/users/:id' => 'admin#destroy_user', :as => :admin_destroy_user
   post 'admin/docking_jobs/:id/cancel' => 'admin#cancel_docking_job', :as => :admin_cancel_docking_job
+  post 'admin/conversions/retry' => 'admin#retry_conversions', :as => :admin_retry_conversions
+  post 'admin/conversions/backfill' => 'admin#backfill_conversions', :as => :admin_backfill_conversions
+  post 'admin/conversions/:id/retry' => 'admin#retry_conversion', :as => :admin_retry_conversion
 
   controller :sessions do
     get 'login' => :new

@@ -37,6 +37,10 @@ check "intermediate values were shown" "$(echo $SEEN | tr ' ' '\n' | awk '$1>0 &
 for aid in $AIDS; do check "assay $aid stored" "$(sql "select count(*) from assays where aid='$aid'")" "1"; done
 check "every assay completed" "$(sql "select count(*) from notifications where query_id=$Q and event='AssayCompleted'")" "$(echo $AIDS | wc -w | tr -d ' ')"
 check "rows of every assay stored" "$(sql "select count(distinct a.aid) from assays a join assays_compounds ac on ac.assay_id=a.id where a.aid in ($(echo $AIDS | tr ' ' ','))")" "$(echo $AIDS | wc -w | tr -d ' ')"
+check "compounds without 3D conformer are queued for conversion" "$(sql "select count(*) > 0 from conversion_jobs where query_id=$Q")" "1"
+check "the download does not wait for the conversions" "$(sql "select count(*) > 0 from conversion_jobs where query_id=$Q and status in ('queued','running')")" "1"
+for i in $(seq 1 1200); do [ "$(sql "select count(*) from conversion_jobs where query_id=$Q and status in ('queued','running')")" = 0 ] && break; sleep 1; done
+echo "  conversions ended $(( $(date +%s) - START ))s after the start"
 check "compounds converted to 3D by MODIP are stored" "$(sql "select count(*) > 0 from compounds where coordinate_source_id = 7")" "1"
 check "no unexpected compound errors" "$(sql "select count(*) from notifications where query_id=$Q and message like 'unexpected error%'")" "0"
 check "assays ran in parallel" "$(docker compose logs download 2>&1 | grep -oE 'total compound [0-9]+' | wc -l | awk '{print ($1>=4)?"yes":"no"}')" "yes"

@@ -4,6 +4,7 @@
 #                     │  dRuby                 ▲ dRuby callbacks (observers)
 #                     ├──> download ──dRuby──> database ──> mysql
 #                     └──> docking  ──────────────────────> mysql
+#   download ──(2D compounds)──> conversion_jobs <── conversion-broker <──mTLS── converter(s)
 #
 # Every MODIP server runs in its own container and they talk over dRuby on the
 # internal network "modip". Only nginx publishes ports (plus MySQL on
@@ -104,6 +105,7 @@ services:
     environment:
       <<: *ruby-env
       MODIP_DRB_URI: druby://database:${MODIP_DATABASE_DRB_PORT}
+      MODIP_BABEL_TIMEOUT: ${MODIP_BABEL_TIMEOUT:-300}
     healthcheck:
       test: ["CMD", "drb-healthcheck"]
       interval: 10s
@@ -127,6 +129,8 @@ services:
       MODIP_DOWNLOAD_THREADS: ${MODIP_DOWNLOAD_THREADS:-2}
       MODIP_BABEL_PROCESSES: ${MODIP_BABEL_PROCESSES:-1}
       MODIP_BABEL_TIMEOUT: ${MODIP_BABEL_TIMEOUT:-300}
+      MODIP_CONVERSION_MODE: ${MODIP_CONVERSION_MODE:-queue}
+      MODIP_BABEL_THREADS: ${MODIP_BABEL_THREADS:-4}
       DOWNLOAD_ENGINE_SSL_VERIFY: ${DOWNLOAD_ENGINE_SSL_VERIFY}
     volumes:
       - modip_data:/app/Server/data
@@ -185,6 +189,8 @@ services:
       MODIP_SECRET_TOKEN: ${MODIP_SECRET_TOKEN}
       MODIP_GUEST_MODE: ${MODIP_GUEST_MODE:-readonly}
       MODIP_ADMIN_USERS: ${MODIP_ADMIN_USERS:-}
+      MODIP_BABEL_TIMEOUT: ${MODIP_BABEL_TIMEOUT:-300}
+      MODIP_BABEL_RETRY_TIMEOUT: ${MODIP_BABEL_RETRY_TIMEOUT:-900}
       MODIP_CAPTCHA_SITE_KEY: ${MODIP_CAPTCHA_SITE_KEY:-}
       MODIP_CAPTCHA_SECRET: ${MODIP_CAPTCHA_SECRET:-}
       MODIP_REQUIRE_EMAIL_CONFIRMATION: ${MODIP_REQUIRE_EMAIL_CONFIRMATION:-false}
@@ -212,6 +218,79 @@ services:
       mysql: { condition: service_healthy }
       download: { condition: service_healthy }
       docking: { condition: service_healthy }
+
+  # Creates the CA and the certificates of the conversion broker and of the
+  # local worker on first start (deploy/conversion/certs.sh), then exits.
+  certs:
+    image: ${MODIP_IMAGE_PREFIX}/converter:${MODIP_IMAGE_TAG}
+    build:
+      context: .
+      dockerfile: docker/ruby/Dockerfile
+      target: converter
+    platform: linux/amd64
+    pull_policy: never
+    restart: "no"
+    entrypoint: ["modip-certs"]
+    command: ["ensure"]
+    environment:
+      MODIP_CONVERSION_BROKER_HOSTS: ${MODIP_CONVERSION_BROKER_HOSTS:-}
+      MODIP_CONVERSION_PUBLIC_HOST: ${MODIP_CONVERSION_PUBLIC_HOST:-}
+      MODIP_CONVERSION_BROKER_PORT: ${MODIP_CONVERSION_BROKER_PORT:-7443}
+    volumes:
+      - modip_certs:/certs
+    network_mode: none
+
+  # Hands the queued 2D->3D conversions to the workers over mutual TLS and
+  # stores their results (Server/conversion_broker.rb). Remote workers reach
+  # it through MODIP_CONVERSION_BIND:MODIP_CONVERSION_BROKER_PORT.
+  conversion-broker:
+    <<: *ruby-service
+    hostname: conversion-broker
+    working_dir: /app/Server
+    command: ["ruby", "conversion_broker.rb"]
+    environment:
+      <<: *ruby-env
+      MODIP_CONVERSION_BROKER_PORT: "7443"
+      MODIP_CONVERSION_WORKERS: ${MODIP_CONVERSION_WORKERS:-local}
+      MODIP_CONVERSION_ALLOW: ${MODIP_CONVERSION_ALLOW:-}
+      MODIP_CONVERSION_LEASE: ${MODIP_CONVERSION_LEASE:-120}
+    volumes:
+      - modip_data:/app/Server/data
+      - modip_certs:/certs:ro
+    ports:
+      - "${MODIP_CONVERSION_BIND:-127.0.0.1}:${MODIP_CONVERSION_BROKER_PORT:-7443}:7443"
+    healthcheck:
+      test: ["CMD", "ruby", "-rsocket", "-e", "TCPSocket.new('127.0.0.1', 7443).close"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 20s
+    depends_on:
+      mysql: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+      certs: { condition: service_completed_successfully }
+
+  # Local conversion workers (Server/conversion_worker.rb): one conversion at
+  # a time each, with MODIP_BABEL_THREADS threads. About one per 4 free cores;
+  # docking runs on the same machine.
+  converter:
+    <<: *ruby-service
+    image: ${MODIP_IMAGE_PREFIX}/converter:${MODIP_IMAGE_TAG}
+    working_dir: /app/Server
+    command: ["ruby", "conversion_worker.rb"]
+    environment:
+      TZ: ${TZ}
+      MODIP_BROKER_URI: drbssl://conversion-broker:7443
+      MODIP_WORKER_CERT: /certs/workers/local.crt
+      MODIP_WORKER_KEY: /certs/workers/local.key
+      MODIP_CA_CERT: /certs/ca.crt
+      MODIP_BABEL_THREADS: ${MODIP_BABEL_THREADS:-4}
+    volumes:
+      - modip_certs:/certs:ro
+    deploy:
+      replicas: ${MODIP_CONVERSION_LOCAL_WORKERS:-1}
+    depends_on:
+      conversion-broker: { condition: service_healthy }
 
   nginx:
     image: nginx:${NGINX_VERSION}
@@ -251,5 +330,6 @@ networks:
 volumes:
   mysql_data:
   modip_data:
+  modip_certs:
   download_log:
   web_log:

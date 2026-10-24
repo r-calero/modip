@@ -28,6 +28,11 @@ require 'set'
 #     for the 3D records and one for the 2D records of the whole batch);
 #   - assay rows are sent to the database in batches of ROW_BATCH.
 #
+# MODIP_CONVERSION_MODE=queue (default): compounds that PubChem only has in 2D
+# are stored in 2D and their 3D conversion is queued for the conversion
+# workers (Server/conversion_worker.rb), so the download does not wait for it.
+# MODIP_CONVERSION_MODE=inline converts them here, as before.
+#
 # Converting a 2D compound to 3D (Open Babel 2.3 --gen3D) is the slowest step:
 # tens of seconds per molecule, and some molecules never finish. Open Babel
 # already uses several cores, so conversions run one at a time by default
@@ -66,6 +71,10 @@ class DownloadEngine
     @threads = [(threads || setting('MODIP_DOWNLOAD_THREADS') || 2).to_i, 1].max
     @babel_processes = [(setting('MODIP_BABEL_PROCESSES') || 1).to_i, 1].max
     @babel_timeout = [(setting('MODIP_BABEL_TIMEOUT') || 300).to_i, 1].max
+    # OpenMP threads of Open Babel: one per core slows it down badly as soon
+    # as anything else uses the CPU.
+    @babel_threads = [(setting('MODIP_BABEL_THREADS') || 4).to_i, 1].max
+    @conversion_mode = setting('MODIP_CONVERSION_MODE') == 'inline' ? :inline : :queue
     @running = false
     @stopping = false
     @pids = []
@@ -96,6 +105,7 @@ class DownloadEngine
   def babel(input, output, input_extension, output_extension)
     logger.info("Converting compound: #{input} in 2D to: #{output} in 3D format")
     pid = fork do
+      ENV['OMP_NUM_THREADS'] = @babel_threads.to_s
       exec("#{@babel_command} -i #{input_extension} #{input} -o #{output_extension} #{output} --gen3D")
     end
     @lock.synchronize { @pids << pid }
@@ -272,6 +282,12 @@ class DownloadEngine
     directory = File.join(cmp.is_3d ? @download_3d : @download_2d, cmp.filename)
     File.open(directory, 'w') { |f| f.puts cmp.to_s }
     cmp.path = directory
+    if !cmp.is_3d && @conversion_mode == :queue
+      @database_server.insert_compound(cmp)
+      @database_server.enqueue_conversion(cid, id)
+      notify(CompoundNotificationClass.new(id, cid, "CompoundQueued3D", "compound #{cid} was inserted in 2D and queued for its 3D conversion", aid))
+      return true
+    end
     unless cmp.is_3d
       output = File.join(@download_3d, cmp.filename)
       unless babel(directory, output, @sdf_extension, @sdf_extension)

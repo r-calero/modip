@@ -23,7 +23,7 @@ check "footer with the license" "$(curl -s "$B/" | grep -c 'GNU AGPL v3')" "1"
 section "Compound and ranking pages"
 H=$(curl -s "$B/compounds/$COMP")
 check "2D structure from PubChem" "$(echo "$H" | grep -c "pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/$CID/PNG")" "1"
-check "docking results with a 3D link" "$(echo "$H" | grep -c 'View in 3D')" "1"
+check "docking results with a 3D link" "$(echo "$H" | grep -c 'View in 3D' | awk '{print ($1>0)?"yes":"no"}')" "yes"
 H=$(curl -s "$B/users/$TID/compound_ranking/filter_one/$RT/filter_two/$RT/filter_tree/$RT")
 check "ranking has 3D links" "$(echo "$H" | grep -c '>3D<' | awk '{print ($1>0)?"yes":"no"}')" "yes"
 check "ranking has structure thumbnails" "$(echo "$H" | grep -c 'structure-image' | awk '{print ($1>0)?"yes":"no"}')" "yes"

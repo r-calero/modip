@@ -13,5 +13,9 @@ DownloadEngine/test*
 docker/nginx/certs/*.pem
 docker/nginx/certs/*.crt
 docker/nginx/certs/*.key
+# Conversion worker bundles: private keys
+deploy/worker/certs/
+deploy/worker/.env.worker
+*.tar.gz
 
 Backup-codes*.txt

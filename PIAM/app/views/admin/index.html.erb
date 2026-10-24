@@ -47,6 +47,51 @@
   </tbody>
 </table>
 
+<h4 id="conversions">3D conversions</h4>
+<style>form.conversion-retry-all, form.conversion-backfill { display: inline; }</style>
+<p>
+  <% %w(queued running done failed timeout).each do |status| %>
+    <span class="label <%= {'queued' => 'label-info', 'running' => 'label-warning', 'done' => 'label-success', 'failed' => 'label-important', 'timeout' => 'label-important'}[status] %>"
+          id="conversions-<%= status %>"><%= status %>: <%= @conversion_counts[status] || 0 %></span>
+  <% end %>
+</p>
+<p class="muted">
+  Workers seen in the last 10 minutes:
+  <% if @conversion_workers.empty? %>
+    none
+  <% else %>
+    <% @conversion_workers.each do |name, idle, running| %>
+      <span class="worker"><strong><%= name %></strong> (<%= running > 0 ? 'converting' : 'idle' %>, last seen <%= idle %> s ago)</span>
+    <% end %>
+  <% end %>
+</p>
+<p>
+  <% if @failed_conversions.any? %>
+    <%= button_to "Retry all failed (#{ConversionJob.retry_timeout} s each)", admin_retry_conversions_path, :class => 'btn btn-small',
+                  :form_class => 'conversion-retry-all',
+                  :confirm => 'Queue every failed or timed-out conversion again?' %>
+  <% end %>
+  <% if @backfill_candidates > 0 %>
+    <%= button_to "Queue #{@backfill_candidates} older 2D compounds", admin_backfill_conversions_path, :class => 'btn btn-small',
+                  :form_class => 'conversion-backfill',
+                  :confirm => "Queue the 3D conversion of #{@backfill_candidates} compounds stored in 2D?" %>
+  <% end %>
+</p>
+<% if @failed_conversions.any? %>
+  <table class="table table-condensed" id="failed-conversions">
+    <thead><tr><th>CID</th><th>Status</th><th>Attempts</th><th>Worker</th><th>Error</th><th></th></tr></thead>
+    <tbody>
+      <% @failed_conversions.each do |job| %>
+        <tr>
+          <td><%= job.compound ? link_to(job.compound.cid, compound_path(job.compound)) : '-' %></td>
+          <td><%= job.status %></td><td><%= job.attempts %></td><td><%= job.worker %></td><td><%= job.error %></td>
+          <td><%= button_to 'Retry', admin_retry_conversion_path(job), :class => 'btn btn-mini' %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
 <h4>Users</h4>
 <table class="table table-condensed table-striped">
   <thead><tr><th>Name</th><th>E-mail</th><th>Role</th><th>Queries</th><th>Docking jobs</th><th></th></tr></thead>

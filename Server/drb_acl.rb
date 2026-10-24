@@ -6,8 +6,9 @@ require 'drb/acl'
 module ModipDrbAcl
   DEFAULT = "127.0.0.1 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
 
-  def self.install
-    value = ENV["MODIP_DRB_ALLOW"].to_s.strip
+  # value: networks to allow (default MODIP_DRB_ALLOW, then the private ranges).
+  def self.install(value = ENV["MODIP_DRB_ALLOW"])
+    value = value.to_s.strip
     allowed = (value.empty? ? DEFAULT : value).split
     DRb.install_acl(ACL.new(%w(deny all) + allowed.map { |net| ["allow", net] }.flatten))
   end
