@@ -7,12 +7,12 @@
   <% if target == :compound_processed  or target == :compound_inserted%>
      <% items.each do |item| %>
           <% compound = item.compound %>
-          <p><%= item.notification.message %> with cid =  <%= link_to item.cid, compound_path(compound) %></p>
+          <p><%= item.notification.message %> (<%= compound ? link_to("CID #{item.cid}", compound_path(compound)) : "CID #{item.cid}" %>)</p>
      <% end %>
   <% elsif target == :assay_processed or target == :assay_inserted %>
       <% items.each do |item| %>
           <% assay =  item.assay%>
-          <p><%= item.notification.message %> with aid =  <%= link_to item.aid, assay_path(assay) %></p>
+          <p><%= item.notification.message %> (<%= assay ? link_to("AID #{item.aid}", assay_path(assay)) : "AID #{item.aid}" %>)</p>
       <% end %>
   <% else %>
       <% items.each do |item| %>

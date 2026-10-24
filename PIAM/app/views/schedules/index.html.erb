@@ -3,7 +3,7 @@
         <li>
           <%= schedule.info %>
           <%= link_to "edit", edit_schedule_path(schedule.id) %>
-          <%= link_to "delete", schedule, :confirm => 'Are you sure?', :method => :delete %>
+          <%= link_to "delete", schedule, { :method => :delete }.merge(confirm_options('Delete this schedule?', 'Delete a schedule', 'Delete')) %>
         </li>
     <% end %>
 </ul>

@@ -11,7 +11,7 @@
   <tr>
     <td><%= link_to 'Show', prepare_receptor %></td>
     <td><%= link_to 'Edit', edit_prepare_receptor_path(prepare_receptor) %></td>
-    <td><%= link_to 'Destroy', prepare_receptor, :confirm => 'Are you sure?', :method => :delete %></td>
+    <td><%= link_to 'Destroy', prepare_receptor, { :method => :delete }.merge(confirm_options('Delete this receptor and its docking results?', 'Delete a receptor', 'Delete')) %></td>
   </tr>
 <% end %>
 </table>

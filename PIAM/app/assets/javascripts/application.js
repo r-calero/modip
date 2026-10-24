@@ -15,6 +15,7 @@
 //= require bootstrap
 //= require bootstrap-tooltip
 //= require bootstrap-popover
+//= require confirm_modal
 //= require_tree.
 
 $(document).ready(function(){

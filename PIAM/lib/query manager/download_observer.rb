@@ -19,6 +19,8 @@ class DownloadObserver < UserObserver
         notification_model = Notification.new(:message => notification.message, :query_id => @id, :event => notification.event)
         if notification.class == FinishedNotificationClass
           FinishedNotification.create(:notification => notification_model, :time => Time.now)
+          query = Query.find_by_id(@id)
+          query.run_finished!(notification.event) if query
           stop_listen()
           send_notification()
         else

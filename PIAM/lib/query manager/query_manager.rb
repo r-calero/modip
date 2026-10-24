@@ -16,6 +16,7 @@ class QueryManager < NotificationManager
     Query.all.each do |query|
       @downloads_observers[query.id] = DownloadObserver.new(query.id, @download_server)
       schedule_query(query) if query.schedule
+      mark_interrupted(query) if query.last_status == 'running'
     end
 
   end
@@ -24,6 +25,7 @@ class QueryManager < NotificationManager
     @downloads_observers[query.id] ||= DownloadObserver.new(query.id, @download_server)
     @downloads_observers[query.id].start
     if @download_server.start_download(query.id, query.query, query.target_id, query.outcome_assay_filter, query.min_date, query.max_date)
+      query.run_started!
       true
     else
       @downloads_observers[query.id].stop
@@ -35,6 +37,7 @@ class QueryManager < NotificationManager
   def stop_download(query)
     if @download_server.stop_download(query.id)
       @downloads_observers[query.id].stop
+      query.run_stopped!
       true
     else
       false
@@ -65,11 +68,32 @@ class QueryManager < NotificationManager
       nil
     end
     conversions = ConversionJob.summary_for_query(query_id)
-    return info.merge('status' => 'running', 'running' => true, 'conversions' => conversions) if info
+    query = Query.find_by_id(query_id)
+    return info.merge('status' => 'running', 'running' => true, 'conversions' => conversions, 'last_run' => last_run(query)) if info
     finished = Notification.where(:query_id => query_id, :event => %w(Finished Stop)).order('id DESC').first
     status = finished ? (finished.event == 'Stop' ? 'stopped' : 'complete') : 'idle'
+    mark_interrupted(query) if query && !finished && query.last_status == 'running' &&
+                               query.last_started_at && query.last_started_at < Time.now - 60
     { 'status' => status, 'running' => false, 'percent' => (status == 'complete' ? 100.0 : 0.0),
-      'message' => finished && finished.message, 'conversions' => conversions }
+      'message' => finished && finished.message, 'conversions' => conversions, 'last_run' => last_run(query && query.reload) }
+  end
+
+  # Result of the last run, for the queries page.
+  def last_run(query)
+    return nil unless query
+    { 'status' => query.last_status, 'summary' => query.run_summary_text,
+      'finished_at' => query.last_finished_at && query.last_finished_at.strftime('%Y-%m-%d %H:%M') }
+  end
+
+  # A run marked as running that the download server no longer runs (it was
+  # restarted, for example).
+  def mark_interrupted(query)
+    running = begin
+      @download_server.downloading(query.id)
+    rescue DRb::DRbError
+      return
+    end
+    query.run_interrupted! unless running
   end
 
   def get_process(channel)

@@ -81,6 +81,14 @@
             </div>
             <div class="row-fluid">
               <div class="span3 text-right">
+                <label>last run:</label>
+              </div>
+              <div class="span9 text-left" id="<%= "last-run-#{id}" %>">
+                <%= query_last_run(query) %>
+              </div>
+            </div>
+            <div class="row-fluid">
+              <div class="span3 text-right">
                 <label>target:</label>
               </div>
               <div class="span9 text-left">
@@ -98,13 +106,14 @@
           </div>
         </div>
         <div class="row-fluid">
-			<div class="progress" id= <%="progress-#{id}"%> >
-              <div class="bar" id= <%="progressbar-#{id}" %> style="width: <%= running[id] ? progress[id]['percent'] : 0 %>%;"></div>
+			<div class="progress <%= download_bar_class(query, running[id]) %>" id="<%= "progress-#{id}" %>">
+              <div class="bar" id="<%= "progressbar-#{id}" %>" style="width: <%= download_bar_width(query, running[id], progress[id]) %>%;"></div>
             </div>
-            <div class="conversion-progress" id="<%= "conversion-#{id}" %>" style="<%= 'display: none;' unless converting[id] %>">
-              <small class="muted" id="<%= "conversion-info-#{id}" %>"><%= conversion_progress_text(converting[id]) if converting[id] %></small>
-              <div class="progress progress-info progress-striped">
-                <div class="bar" id="<%= "conversion-bar-#{id}" %>" style="width: <%= converting[id] ? conversion_percent(converting[id]) : 0 %>%;"></div>
+            <% c = conversions[id] %>
+            <div class="conversion-progress" id="<%= "conversion-#{id}" %>" style="<%= 'display: none;' unless c %>">
+              <small class="muted" id="<%= "conversion-info-#{id}" %>"><%= conversion_progress_text(c) if c %></small>
+              <div class="progress <%= c ? conversion_bar_class(c) : '' %>" id="<%= "conversion-progress-#{id}" %>">
+                <div class="bar" id="<%= "conversion-bar-#{id}" %>" style="width: <%= c ? conversion_percent(c) : 0 %>%;"></div>
               </div>
             </div>
         </div>
@@ -118,7 +127,7 @@
         <% else %>
             <script type="text/javascript">
               $("<%="#stop-#{id}"%>" + "> a:first").hide();
-              <% if converting[id] %>
+              <% if conversions[id] && conversions[id]['pending'] > 0 %>
               start_download_progress("<%= id %>", "<%= progress_query_path(:id => id, :format => :json) %>");
               <% end %>
             </script>

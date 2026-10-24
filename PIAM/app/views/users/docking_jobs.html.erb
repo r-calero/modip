@@ -14,9 +14,9 @@
           <td><%= job.target ? job.target.name : '-' %></td>
           <td><%= docking_status_label(job.status) %></td>
           <td>
-            <div class="progress" style="margin-bottom: 0;"><div class="bar" style="width: <%= job.percent %>%;"></div></div>
+            <div class="progress <%= docking_bar_class(job) %> docking-progress" style="margin-bottom: 0;"><div class="bar" style="width: <%= job.percent %>%;"></div></div>
           </td>
-          <td><%= job.processed_compounds %> / <%= job.total_compounds %><%= " (#{job.failed_compounds} failed)" if job.failed_compounds > 0 %></td>
+          <td><%= job.processed_compounds %> / <%= job.total_compounds %> <%= docking_counts_note(job) %></td>
           <td><%= job.created_at.strftime('%Y-%m-%d %H:%M') %></td>
           <td><%= link_to 'Details', docking_job_user_path(@user, job) %></td>
         </tr>

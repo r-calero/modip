@@ -1,0 +1,6 @@
+// Grey progress bar (cancelled docking jobs); Bootstrap 2 has no such class.
+.progress-muted .bar, .progress .bar-muted {
+  background-color: #999999;
+  background-image: linear-gradient(to bottom, #aaaaaa, #888888);
+  background-repeat: repeat-x;
+}

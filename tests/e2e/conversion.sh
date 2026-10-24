@@ -41,6 +41,14 @@ check "done jobs record the local worker" "$(sql "select count(*) from conversio
 p=$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/queries/$Q/progress.json")
 check "progress.json reports the conversions" "$(echo "$p" | python3 -c 'import sys,json; c=json.load(sys.stdin)["conversions"]; print(c["total"], c["pending"])')" "$QUEUED 0"
 
+section "Worker registry"
+check "the idle local worker keeps contacting the broker" "$(wait_sql "select current_job_id is null and last_seen_at > NOW() - INTERVAL 45 SECOND from conversion_workers where cn='local' and label<>'test'" 1 45)" "1"
+A=$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/admin")
+check "admin page: workers table" "$(echo "$A" | grep -c 'id="conversion-workers"')" "1"
+check "admin page: local worker shown as idle" "$(echo "$A" | grep -A3 '<strong>local</strong>' | grep -c 'worker-state">idle')" "1"
+N=$(sql "select count(*) from conversion_jobs where status='done' and worker=(select name from conversion_workers where cn='local' and label<>'test')")
+check "admin page: conversions done in the last day" "$(echo "$A" | grep -A6 '<strong>local</strong>' | grep -c "<td>$N</td>")" "1"
+
 # The download also queued a docking job for its compounds; it would compete
 # with Open Babel for the CPU during these tests.
 sql "update docking_jobs set status='cancelled', finished_at=NOW() where status in ('waiting','queued','running')"
@@ -118,7 +126,10 @@ section "Worker shutdown gives the job back"
 to_2d "${C[3]}" 600; only_pending "${C[3]}"
 docker compose start converter >/dev/null 2>&1
 wait_sql "select j.status from conversion_jobs j join compounds c on c.id=j.compound_id where c.cid=${C[3]}" running 60 >/dev/null
+check "registry shows the compound being converted" "$(sql "select current_cid from conversion_workers where cn='local' and label<>'test'")" "${C[3]}"
+check "admin page: worker shown as converting" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/admin" | grep -A4 '<strong>local</strong>' | grep -c "CID ${C[3]}")" "1"
 docker compose stop converter >/dev/null 2>&1
+check "registry cleared on release" "$(sql "select current_job_id is null from conversion_workers where cn='local' and label<>'test'")" "1"
 check "released on stop" "$(sql "select concat(j.status, ':', j.attempts) from conversion_jobs j join compounds c on c.id=j.compound_id where c.cid=${C[3]}")" "queued:0"
 
 section "Remote worker (deploy/worker)"
@@ -132,7 +143,7 @@ chmod 644 "$W/certs/"*   # the files are owned by the test user, the worker runs
 docker compose -p modip-worker-test -f "$W/docker-compose.worker.yml" up -d >/dev/null 2>&1
 check "remote worker converts the queued compound" "$(wait_sql "select j.status from conversion_jobs j join compounds c on c.id=j.compound_id where c.cid=${C[3]}" done 300)" "done"
 check "done by lab-02" "$(sql "select j.worker from conversion_jobs j join compounds c on c.id=j.compound_id where c.cid=${C[3]}")" "lab-02@remote-test"
-check "admin page lists the remote worker" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/admin" | grep -c '<strong>lab-02@remote-test</strong>')" "1"
+check "admin page lists the remote worker" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/admin" | grep -A1 '<strong>lab-02</strong>' | grep -c '<td>remote-test</td>')" "1"
 docker compose -p modip-worker-test -f "$W/docker-compose.worker.yml" down >/dev/null 2>&1
 release_held
 docker compose start converter >/dev/null 2>&1

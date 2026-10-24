@@ -237,6 +237,10 @@ docker compose run --rm migrate      # aplicarlas a mano
   la diana tiene receptores.
 - El panel *Admin* muestra el resumen del sistema, los usuarios (se pueden
   borrar) y los trabajos de todos (se pueden cancelar).
+- La barra de progreso es verde si el trabajo terminó bien (que un compuesto
+  no dé poses es un resultado válido), naranja si algún compuesto no se pudo
+  dockear (quedó en 2D, no existe o dio error), roja si el trabajo falló y gris
+  si se canceló.
 - Exportaciones: el ranking en CSV y las poses en `.tar.gz` (de un trabajo o de
   toda la diana).
 - Los receptores se pueden subir ya preparados (`.pdbqt`) o como `.pdb`: MODIP
@@ -257,6 +261,16 @@ docker compose run --rm migrate      # aplicarlas a mano
 - La barra de progreso de las consultas la calcula el servidor de descargas
   (ensayos completados más la fracción de los que están en curso) y la página
   la consulta cada 2 segundos.
+- Cada consulta guarda el resultado de su última ejecución (*last run*):
+  `never`, `running`, `complete`, `partial` (falló algún ensayo o compuesto),
+  `failed` (error general), `stopped` (detenida por el usuario) o
+  `interrupted` (el servidor de descargas se reinició durante la descarga),
+  con las horas y un resumen (ensayos y compuestos nuevos, ya guardados,
+  encolados a 3D, descartados y fallidos). Al terminar, la barra se pone verde,
+  naranja o roja según ese resultado; la de conversiones, verde o naranja si
+  alguna falló. *Admin* cuenta las consultas por resultado.
+- Las confirmaciones (borrar, cancelar, reintentar) usan un modal de la propia
+  aplicación en vez del diálogo del navegador.
 
 ## Conversiones 2D → 3D
 
@@ -290,7 +304,11 @@ Detalles:
   `MODIP_CONVERSION_LEASE` segundos (120), su trabajo vuelve a la cola; a la
   segunda vez se marca como fallido. Un worker que se detiene devuelve su
   trabajo a la cola.
-- *Admin → 3D conversions* muestra también los workers activos y un botón para
+- *Admin → 3D conversions* muestra una tabla con los workers que contactaron
+  al broker en el último día: estado (*converting*, *idle* o *disconnected*
+  tras 2 minutos sin contacto), compuesto en curso, último contacto y
+  conversiones hechas y fallidas en 24 h. El broker anota a cada worker
+  (`conversion_workers`) aunque no tenga trabajo. Hay también un botón para
   encolar los compuestos 2D descargados antes de existir la cola.
 - La barra de la consulta muestra una segunda barra con las conversiones, y la
   ficha del compuesto indica si está en 3D o el estado de su conversión.

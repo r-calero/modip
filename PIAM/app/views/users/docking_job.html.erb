@@ -6,14 +6,14 @@
 
 <div class="row-fluid">
   <div class="span8">
-    <div class="progress progress-striped <%= 'active' if @job.active? %>" id="job-progress">
+    <div class="progress <%= docking_bar_class(@job) %>" id="job-progress">
       <div class="bar" id="job-progress-bar" style="width: <%= @job.percent %>%;"></div>
     </div>
   </div>
   <div class="span4">
     <strong id="job-percent"><%= @job.percent %>%</strong> &middot;
     <span id="job-processed"><%= @job.processed_compounds %></span> / <span id="job-total"><%= @job.total_compounds %></span> compounds
-    <span id="job-failed"><%= "(#{@job.failed_compounds} without poses)" if @job.failed_compounds > 0 %></span>
+    <span id="job-failed"><%= docking_counts_note(@job) %></span>
   </div>
 </div>
 
@@ -25,8 +25,9 @@
   </p>
   <p id="job-actions">
     <% if @job.active? %>
-      <%= button_to 'Cancel docking', cancel_docking_job_user_path(@user, @job), :class => 'btn btn-danger', :id => 'job-cancel',
-                    :form_class => 'docking-cancel', :confirm => 'Cancel this docking job?' %>
+      <%= button_to 'Cancel docking', cancel_docking_job_user_path(@user, @job),
+                    { :class => 'btn btn-danger', :id => 'job-cancel', :form_class => 'docking-cancel' }.merge(
+                    confirm_options('The compounds not docked yet will not be processed.', "Cancel docking job ##{@job.id}?", 'Cancel the job')) %>
     <% end %>
     <% if @job.target %>
       <%= link_to 'Ranking list', compound_rank_user_url(:target => { :target_id => @job.target_id }), :method => :post, :class => 'btn' %>
@@ -57,6 +58,21 @@
     var labels = <%= raw DockingJobsHelper::STATUS_LABELS.to_json %>;
     var active = <%= @job.active? ? 'true' : 'false' %>;
 
+    // Same rules as DockingJobsHelper#docking_bar_class / #docking_counts_note.
+    var BAR_CLASSES = "progress-striped active progress-success progress-warning progress-danger progress-muted";
+    function dockingBarClass(job) {
+      if (job.status === "finished") { return job.skipped > 0 ? "progress-warning" : "progress-success"; }
+      if (job.status === "failed") { return "progress-danger"; }
+      if (job.status === "cancelled") { return "progress-muted"; }
+      return "progress-striped active";
+    }
+    function countsNote(job) {
+      var parts = [], noPoses = job.failed - job.skipped;
+      if (noPoses > 0) { parts.push(noPoses + " without poses"); }
+      if (job.skipped > 0) { parts.push(job.skipped + " not docked"); }
+      return parts.length ? "(" + parts.join(", ") + ")" : "";
+    }
+
     function cell(text, pre) {
       var td = $("<td></td>");
       if (pre) { td.append($("<pre style='margin: 0;'></pre>").text(text)); } else { td.text(text); }
@@ -68,7 +84,7 @@
       $("#job-percent").text(job.percent + "%");
       $("#job-processed").text(job.processed);
       $("#job-total").text(job.total);
-      $("#job-failed").text(job.failed > 0 ? "(" + job.failed + " without poses)" : "");
+      $("#job-failed").text(countsNote(job));
       $("#job-waiting").text(job.status === "waiting" ? "Waiting for " + job.pending_conversions + " 3D conversion" + (job.pending_conversions === 1 ? "" : "s") + " of its compounds; compounds left in 2D are not docked." : "");
       $("#job-current").text(job.current_cid ? "Docking compound " + job.current_cid + "..." : "");
       $("#job-message").text(job.message || "");
@@ -79,9 +95,9 @@
         $("#job-log tbody").append(row);
         lastLog = log.id;
       });
+      $("#job-progress").removeClass(BAR_CLASSES).addClass(dockingBarClass(job));
       if (job.status !== "waiting" && job.status !== "queued" && job.status !== "running") {
         active = false;
-        $("#job-progress").removeClass("active");
         $("form.docking-cancel").remove();
       }
     }

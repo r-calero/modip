@@ -35,14 +35,6 @@ class ConversionJob < ActiveRecord::Base
       'failed' => cids.size - pending - counts['done'].to_i }
   end
 
-  # Workers seen recently: [[name, seconds since its last heartbeat, running jobs], ...]
-  # Times are compared in MySQL: the broker writes them with NOW().
-  def self.workers(within = 10 * 60)
-    where('worker IS NOT NULL AND heartbeat_at > NOW() - INTERVAL ? SECOND', within.to_i).group(:worker).
-      select("worker, TIMESTAMPDIFF(SECOND, MAX(heartbeat_at), NOW()) AS idle, SUM(status = 'running') AS running").
-      order('worker').map { |r| [r.worker, r.idle.to_i, r.running.to_i] }
-  end
-
   # Queues the conversion of every 2D compound that never had one (compounds
   # downloaded before the conversion queue existed). Returns how many.
   def self.backfill(timeout)

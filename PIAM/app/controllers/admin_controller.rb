@@ -15,7 +15,9 @@ class AdminController < ApplicationController
     @active_jobs = DockingJob.active.includes(:user, :target).order(:id)
     @recent_jobs = DockingJob.where("status NOT IN (?)", DockingJob::ACTIVE).includes(:user, :target).recent.limit(10)
     @conversion_counts = ConversionJob.group(:status).count
-    @conversion_workers = ConversionJob.workers
+    @conversion_workers = ConversionWorker.recent.to_a
+    @worker_results = ConversionWorker.finished_last_day
+    @query_statuses = Query.group(:last_status).count
     @failed_conversions = ConversionJob.unsuccessful.includes(:compound).order('id DESC').limit(50)
     @backfill_candidates = Compound.where("(coordinate IS NULL OR coordinate NOT LIKE '%3D%') AND path IS NOT NULL").
       where('NOT EXISTS (SELECT 1 FROM conversion_jobs j WHERE j.compound_id = compounds.id)').count

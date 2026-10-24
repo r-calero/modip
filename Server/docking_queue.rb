@@ -83,14 +83,14 @@ class DockingQueue
     cids.drop(job.processed_compounds).each do |cid|
       break unless still_running?(job)
       with_db { DockingJob.where(:id => job.id).update_all(:current_cid => cid, :updated_at => Time.now) }
-      success, num_modes, message = dock_one(key, target, cid, code)
+      success, num_modes, message, skipped = dock_one(key, target, cid, code)
       break unless still_running?(job) # cancelled while docking: do not count it
       with_db do
         DockingJobLog.create(:docking_job_id => job.id, :cid => cid, :num_modes => num_modes, :success => success,
                              :message => message.to_s[0, 60000], :created_at => Time.now)
         DockingJob.where(:id => job.id).update_all(
-          ["processed_compounds = processed_compounds + 1, failed_compounds = failed_compounds + ?, updated_at = ?",
-           success ? 0 : 1, Time.now])
+          ["processed_compounds = processed_compounds + 1, failed_compounds = failed_compounds + ?, " \
+           "skipped_compounds = skipped_compounds + ?, updated_at = ?", success ? 0 : 1, skipped ? 1 : 0, Time.now])
       end
     end
 
@@ -103,15 +103,18 @@ class DockingQueue
     @server.forget_files(key) if key
   end
 
-  # Returns [success, number of poses, log text].
+  # Returns [success, number of poses, log text, skipped]. skipped: the
+  # compound could not be docked at all (missing, left in 2D, error), as
+  # opposed to docked without poses.
   def dock_one(key, target, cid, code)
     compound = with_db { Compound.find_by_cid(cid) }
-    return [false, 0, "Compound #{cid} is not in the database"] unless compound
+    return [false, 0, "Compound #{cid} is not in the database", true] unless compound
+    skipped = compound.coordinate.to_s !~ /3D/i
     @server.prepare_key(key)
     message, num_modes = with_db { @server.make_docking(key, target, compound, code) }
-    [num_modes.to_i > 0, num_modes.to_i, message]
+    [num_modes.to_i > 0, num_modes.to_i, message, skipped]
   rescue Exception => e
-    [false, 0, "Compound #{cid}: #{e.class}: #{e.message}"]
+    [false, 0, "Compound #{cid}: #{e.class}: #{e.message}", true]
   end
 
   def still_running?(job)

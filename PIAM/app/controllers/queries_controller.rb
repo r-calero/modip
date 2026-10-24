@@ -13,15 +13,14 @@ class QueriesController < ApplicationController
     progress = {}
     running = {}
     @queries = Query.where(:user_id => params[:user_id]).page(params[:page]).per(5)
-    converting = {}
+    conversions = {}
     @queries.each do |query|
       if(running[query.id] = PIAM::Application::QUERY_MANAGER.downloading(query.id))
         progress[query.id] = PIAM::Application::QUERY_MANAGER.get_progress(query.id)
       end
-      conversions = ConversionJob.summary_for_query(query.id)
-      converting[query.id] = conversions if conversions && conversions['pending'] > 0
+      conversions[query.id] = ConversionJob.summary_for_query(query.id)
     end
-    render :locals => {:progress => progress, :running => running, :converting => converting}
+    render :locals => {:progress => progress, :running => running, :conversions => conversions}
   end
 
   #POST /users/:user_id/queries(.:format)

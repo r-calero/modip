@@ -22,6 +22,9 @@ class ConversionBroker
   MAX_SDF_BYTES = 5 * 1024 * 1024
   MODIP_COORDINATE_SOURCE = 7 # computed by MODIP (Open Babel)
   ANGSTROM_UNIT = 10
+  # An idle worker asks for jobs every few seconds; its registry row
+  # (conversion_workers) is written at most this often.
+  SEEN_INTERVAL = 30
 
   def initialize(data_root, logger = Logger.new($stdout))
     @data_root = data_root
@@ -29,14 +32,19 @@ class ConversionBroker
     @allowed = ENV['MODIP_CONVERSION_WORKERS'].to_s.split(',').map { |n| n.strip }.reject { |n| n.empty? } - [ConversionTLS::BROKER_NAME]
     @lease = [(ENV['MODIP_CONVERSION_LEASE'].to_s.strip.empty? ? 120 : ENV['MODIP_CONVERSION_LEASE'].to_i), 10].max
     @logger.info("[broker] allowed workers: #{@allowed.join(', ')}; lease #{@lease}s")
+    @seen = {}
+    @seen_lock = Mutex.new
   end
 
   # Next queued job as a Hash (job_id, token, cid, sdf, timeout), or nil.
   def claim(label = nil)
     worker = authorize!
+    label = label.to_s.strip[0, 64]
+    label = nil if label.empty?
     name = [worker, label].compact.join('@')[0, 128]
     token = SecureRandom.hex(16)
     with_db do |db|
+      seen(db, name, worker, label)
       claimed = db.update("UPDATE conversion_jobs SET status = 'running', worker = #{db.quote(name)}, claim_token = #{db.quote(token)}, " \
                           "claimed_at = NOW(), heartbeat_at = NOW(), attempts = attempts + 1, updated_at = NOW() " \
                           "WHERE status = 'queued' ORDER BY priority DESC, id LIMIT 1")
@@ -49,6 +57,7 @@ class ConversionBroker
         return nil
       end
       @logger.info("[broker] job #{job.id} (CID #{compound.cid}) -> #{name}")
+      seen(db, name, worker, label, job.id, compound.cid)
       { 'job_id' => job.id, 'token' => token, 'cid' => compound.cid.to_s, 'sdf' => sdf, 'timeout' => job.timeout_seconds }
     end
   end
@@ -58,7 +67,10 @@ class ConversionBroker
   def heartbeat(job_id, token)
     authorize!
     with_db do |db|
-      db.update("UPDATE conversion_jobs SET heartbeat_at = NOW() WHERE id = #{job_id.to_i} AND claim_token = #{db.quote(token)} AND status = 'running'") == 1 ? 'running' : 'lost'
+      alive = db.update("UPDATE conversion_jobs SET heartbeat_at = NOW() WHERE id = #{job_id.to_i} AND claim_token = #{db.quote(token)} AND status = 'running'") == 1
+      db.update("UPDATE conversion_workers w JOIN conversion_jobs j ON j.worker = w.name SET w.last_seen_at = NOW() " \
+                "WHERE j.id = #{job_id.to_i} AND j.claim_token = #{db.quote(token)}") if alive
+      alive ? 'running' : 'lost'
     end
   end
 
@@ -100,8 +112,10 @@ class ConversionBroker
   def release(job_id, token)
     authorize!
     with_db do |db|
-      db.update("UPDATE conversion_jobs SET status = 'queued', worker = NULL, claim_token = NULL, attempts = GREATEST(attempts - 1, 0), " \
-                "updated_at = NOW() WHERE id = #{job_id.to_i} AND claim_token = #{db.quote(token)} AND status = 'running'") == 1
+      released = db.update("UPDATE conversion_jobs SET status = 'queued', worker = NULL, claim_token = NULL, attempts = GREATEST(attempts - 1, 0), " \
+                           "updated_at = NOW() WHERE id = #{job_id.to_i} AND claim_token = #{db.quote(token)} AND status = 'running'") == 1
+      clear_worker(db, job_id)
+      released
     end
   end
 
@@ -113,6 +127,10 @@ class ConversionBroker
                          "error = 'The worker stopped responding twice' WHERE #{stale} AND attempts >= #{MAX_ATTEMPTS}")
       requeued = db.update("UPDATE conversion_jobs SET status = 'queued', worker = NULL, claim_token = NULL, updated_at = NOW() WHERE #{stale}")
       @logger.warn("[broker] leases expired: #{requeued} queued again, #{failed} failed") if failed + requeued > 0
+      # Workers whose job is no longer running (lost lease) are not converting.
+      db.update("UPDATE conversion_workers w LEFT JOIN conversion_jobs j ON j.id = w.current_job_id AND j.status = 'running' " \
+                "SET w.current_job_id = NULL, w.current_cid = NULL WHERE w.current_job_id IS NOT NULL AND j.id IS NULL")
+      db.delete("DELETE FROM conversion_workers WHERE last_seen_at < NOW() - INTERVAL 7 DAY")
     end
   end
 
@@ -127,7 +145,27 @@ class ConversionBroker
     name
   end
 
+  # Registry row of a worker (conversion_workers). Written when its job
+  # changes, otherwise at most every SEEN_INTERVAL seconds.
+  def seen(db, name, cn, label, job_id = nil, cid = nil)
+    now = Time.now
+    key = [name, job_id]
+    @seen_lock.synchronize do
+      return if @seen[name] && @seen[name][0] == key && now - @seen[name][1] < SEEN_INTERVAL
+      @seen[name] = [key, now]
+    end
+    db.execute("INSERT INTO conversion_workers (name, cn, label, current_job_id, current_cid, first_seen_at, last_seen_at) " \
+               "VALUES (#{db.quote(name)}, #{db.quote(cn)}, #{db.quote(label)}, #{job_id ? job_id.to_i : 'NULL'}, #{db.quote(cid && cid.to_s)}, NOW(), NOW()) " \
+               "ON DUPLICATE KEY UPDATE current_job_id = VALUES(current_job_id), current_cid = VALUES(current_cid), last_seen_at = NOW()")
+  end
+
+  def clear_worker(db, job_id)
+    db.update("UPDATE conversion_workers SET current_job_id = NULL, current_cid = NULL, last_seen_at = NOW() WHERE current_job_id = #{job_id.to_i}")
+    @seen_lock.synchronize { @seen.delete_if { |_, (key, _)| key[1] == job_id.to_i } }
+  end
+
   def finish(db, job_id, token, status, message)
+    clear_worker(db, job_id)
     db.update("UPDATE conversion_jobs SET status = #{db.quote(status)}, claim_token = NULL, error = #{db.quote(message)}, " \
               "finished_at = NOW(), updated_at = NOW() WHERE id = #{job_id.to_i} AND claim_token = #{db.quote(token)}") == 1
   end

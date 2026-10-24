@@ -12,6 +12,13 @@
 <p class="muted" style="margin-top: 10px;">
   Administrators: <%= User.admin_names.empty? ? 'every registered user (MODIP_ADMIN_USERS is empty)' : User.admin_names.join(', ') %>
 </p>
+<p id="query-statuses">
+  Queries by last run:
+  <% Query::RUN_STATUSES.each do |status| %>
+    <% next unless @query_statuses[status] %>
+    <%= query_status_label(status) %> <%= @query_statuses[status] %>
+  <% end %>
+</p>
 
 <h4>Docking jobs in progress</h4>
 <% if @active_jobs.empty? %>
@@ -25,7 +32,8 @@
           <td><%= job.id %></td><td><%= job.user.try(:name) %></td><td><%= job.target.try(:name) %></td>
           <td><%= docking_status_label(job.status) %></td>
           <td><%= job.processed_compounds %> / <%= job.total_compounds %> (<%= job.percent %>%)</td>
-          <td><%= button_to 'Cancel', admin_cancel_docking_job_path(job), :class => 'btn btn-mini btn-danger', :confirm => "Cancel job ##{job.id}?" %></td>
+          <td><%= button_to 'Cancel', admin_cancel_docking_job_path(job), { :class => 'btn btn-mini btn-danger' }.merge(
+                confirm_options("The job of #{job.user.try(:name)} stops after the compound being docked.", "Cancel docking job ##{job.id}?", 'Cancel the job')) %></td>
         </tr>
       <% end %>
     </tbody>
@@ -55,26 +63,36 @@
           id="conversions-<%= status %>"><%= status %>: <%= @conversion_counts[status] || 0 %></span>
   <% end %>
 </p>
-<p class="muted">
-  Workers seen in the last 10 minutes:
-  <% if @conversion_workers.empty? %>
-    none
-  <% else %>
-    <% @conversion_workers.each do |name, idle, running| %>
-      <span class="worker"><strong><%= name %></strong> (<%= running > 0 ? 'converting' : 'idle' %>, last seen <%= idle %> s ago)</span>
-    <% end %>
-  <% end %>
-</p>
+<% if @conversion_workers.empty? %>
+  <p class="muted" id="conversion-workers-empty">No conversion worker contacted the broker in the last day.</p>
+<% else %>
+  <table class="table table-condensed table-striped" id="conversion-workers">
+    <thead><tr><th>Worker</th><th>Machine</th><th>Status</th><th>Converting</th><th>Last contact</th><th>Done (24 h)</th><th>Failed (24 h)</th></tr></thead>
+    <tbody>
+      <% @conversion_workers.each do |worker| %>
+        <tr class="worker-<%= worker.state %>">
+          <td><strong><%= worker.cn %></strong></td>
+          <td><%= worker.label %></td>
+          <td><%= worker_state_label(worker.state) %></td>
+          <td><%= worker.current_cid && worker.state == 'converting' ? "CID #{worker.current_cid}" : '-' %></td>
+          <td><%= seconds_ago(worker.idle_seconds) %></td>
+          <td><%= @worker_results[[worker.name, 'done']] || 0 %></td>
+          <td><%= (@worker_results[[worker.name, 'failed']] || 0) + (@worker_results[[worker.name, 'timeout']] || 0) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
 <p>
   <% if @failed_conversions.any? %>
-    <%= button_to "Retry all failed (#{ConversionJob.retry_timeout} s each)", admin_retry_conversions_path, :class => 'btn btn-small',
-                  :form_class => 'conversion-retry-all',
-                  :confirm => 'Queue every failed or timed-out conversion again?' %>
+    <%= button_to "Retry all failed (#{ConversionJob.retry_timeout} s each)", admin_retry_conversions_path,
+                  { :class => 'btn btn-small', :form_class => 'conversion-retry-all' }.merge(
+                  confirm_options("Every failed or timed-out conversion is queued again, with up to #{ConversionJob.retry_timeout} s each.", 'Retry failed conversions', 'Retry all', 'primary')) %>
   <% end %>
   <% if @backfill_candidates > 0 %>
-    <%= button_to "Queue #{@backfill_candidates} older 2D compounds", admin_backfill_conversions_path, :class => 'btn btn-small',
-                  :form_class => 'conversion-backfill',
-                  :confirm => "Queue the 3D conversion of #{@backfill_candidates} compounds stored in 2D?" %>
+    <%= button_to "Queue #{@backfill_candidates} older 2D compounds", admin_backfill_conversions_path,
+                  { :class => 'btn btn-small', :form_class => 'conversion-backfill' }.merge(
+                  confirm_options("#{@backfill_candidates} compounds stored in 2D are queued for their 3D conversion.", 'Convert older compounds', 'Queue them', 'primary')) %>
   <% end %>
 </p>
 <% if @failed_conversions.any? %>
@@ -105,8 +123,8 @@
         <td><%= @jobs[user.id] || 0 %></td>
         <td>
           <% unless user.id == registered_user.id || user.name == User::DefaultUser %>
-            <%= button_to 'Delete', admin_destroy_user_path(user), :method => :delete, :class => 'btn btn-mini btn-danger',
-                          :confirm => "Delete user #{user.name} and all their queries and docking jobs?" %>
+            <%= button_to 'Delete', admin_destroy_user_path(user), { :method => :delete, :class => 'btn btn-mini btn-danger' }.merge(
+                          confirm_options("All the queries and docking jobs of #{user.name} are deleted too.", "Delete user #{user.name}?", 'Delete')) %>
           <% end %>
         </td>
       </tr>

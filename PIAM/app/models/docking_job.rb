@@ -64,6 +64,7 @@ class DockingJob < ActiveRecord::Base
     {
       :id => id, :status => status, :percent => percent,
       :total => total_compounds, :processed => processed_compounds, :failed => failed_compounds,
+      :skipped => skipped_compounds,
       :current_cid => current_cid, :message => message,
       :pending_conversions => (status == 'waiting' ? pending_conversions : 0),
       :started_at => started_at, :finished_at => finished_at,

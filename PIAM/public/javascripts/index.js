@@ -12,6 +12,31 @@ schedule_sources = {};
 // parallel); the page reads it every 2 seconds (QueriesController#progress).
 download_polls = {};
 
+// Colours of a query run, as in QueriesHelper (RUN_LABELS / RUN_BARS).
+var RUN_STYLES = {
+    never: ["", ""], running: ["label-info", "progress-striped active"],
+    complete: ["label-success", "progress-success"], partial: ["label-warning", "progress-warning"],
+    failed: ["label-important", "progress-danger"], stopped: ["label-important", "progress-danger"],
+    interrupted: ["label-important", "progress-danger"]
+};
+var BAR_CLASSES = "progress-striped active progress-success progress-warning progress-danger progress-info";
+
+function set_bar_style(element, classes) {
+    $(element).removeClass(BAR_CLASSES).addClass(classes);
+}
+
+// Download bar and "last run" cell once a run has ended.
+function show_run_result(key, status, last_run) {
+    var style = RUN_STYLES[status] || RUN_STYLES.never;
+    set_bar_style("#progress-" + key, style[1]);
+    $("#progressbar-" + key).css("width", status === "never" ? "0" : "100%");
+    if (!last_run) { return; }
+    var cell = $("#last-run-" + key).empty();
+    cell.append($("<span></span>").addClass("label query-status " + style[0]).text(status === "never" ? "never run" : status));
+    if (last_run.finished_at) { cell.append(" ").append($("<span class='muted query-finished-at'></span>").text("finished " + last_run.finished_at)); }
+    if (last_run.summary) { cell.append(" ").append($("<span class='query-summary'></span>").text(last_run.summary)); }
+}
+
 function start_download_progress(channel, url) {
     var key = parseInt(channel);
     if (download_polls[key]) { return; }
@@ -25,8 +50,9 @@ function poll_download(key) {
     $.getJSON(poll.url).done(function (p) {
         if (!download_polls[key]) { return; }
         var converting = show_conversions(key, p.conversions);
-        $("#progressbar-" + key).css("width", p.percent + "%");
         if (p.running) {
+            set_bar_style("#progress-" + key, RUN_STYLES.running[1]);
+            $("#progressbar-" + key).css("width", p.percent + "%");
             $("#status-" + key).text("running");
             if (p.total_assays) {
                 $("#query-info-" + key).text(p.completed_assays + " of " + p.total_assays + " assays (" + p.percent + "%)");
@@ -36,6 +62,8 @@ function poll_download(key) {
         } else {
             $("#status-" + key).text(p.status === "idle" ? "stop" : p.status);
             if (p.status === "complete") { $("#query-info-" + key).text("download complete"); }
+            var result = p.last_run && p.last_run.status !== "running" ? p.last_run.status : p.status;
+            show_run_result(key, result === "idle" ? "never" : result, p.last_run);
             if (!converting) {
                 stop_download_progress(key);
                 return;
@@ -71,6 +99,8 @@ function show_conversions(key, c) {
     if (c.pending > 0) { text += ", " + c.pending + " pending (docking waits for them)"; }
     $("#conversion-" + key).show();
     $("#conversion-info-" + key).text(text);
+    set_bar_style("#conversion-progress-" + key, c.pending > 0 ? "progress-info progress-striped active" :
+                  (c.failed > 0 ? "progress-warning" : "progress-success"));
     $("#conversion-bar-" + key).css("width", (done * 100 / c.total) + "%");
     return c.pending > 0;
 }
@@ -129,7 +159,7 @@ $(document).ready(function(){
         var key = parseInt($(this).attr('channel'));
         $("#status-" + key).text('stop');
         stop_download_progress(key);
-        $("#progressbar-" + key).css('width', '0');
+        show_run_result(key, "stopped", null);
 
     })
 });
@@ -141,6 +171,7 @@ $(document).ready(function(){
         var current_obj = $(this);
         var key = current_obj.attr('channel');
         start_see(key);
+        set_bar_style("#progress-" + key, RUN_STYLES.running[1]);
         $("#progressbar-" + key).css('width', '0');
         start_download_progress(key, current_obj.attr('dir'));
     })

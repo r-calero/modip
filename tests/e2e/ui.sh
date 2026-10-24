@@ -1,6 +1,8 @@
 #!/bin/bash
-# Layout, flash messages, structure images, 3D pose viewer, energy chart.
-# Run after security.sh and docking.sh on the same stack. With Google Chrome
+# Layout, flash messages, structure images, 3D pose viewer, energy chart,
+# confirmation modal and colours of the docking progress bars.
+# Run after security.sh and docking.sh on the same stack (conversion.sh adds
+# a docking job with a compound left in 2D). With Google Chrome
 # installed (CHROME=path), the viewer and the chart are also run in a
 # headless browser.
 . "$(dirname "$0")/lib.sh"
@@ -28,6 +30,26 @@ H=$(curl -s "$B/users/$TID/compound_ranking/filter_one/$RT/filter_two/$RT/filter
 check "ranking has 3D links" "$(echo "$H" | grep -c '>3D<' | awk '{print ($1>0)?"yes":"no"}')" "yes"
 check "ranking has structure thumbnails" "$(echo "$H" | grep -c 'structure-image' | awk '{print ($1>0)?"yes":"no"}')" "yes"
 
+section "Confirmations and docking bars"
+AD=$(sql "select id from users where name='admin1'")
+login admin1 admin1 "$PASSWORD" >/dev/null
+A=$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/admin")
+check "admin buttons use the confirmation modal (title on every data-confirm)" "$(echo "$A" | grep -o 'data-confirm=' | wc -l | tr -d ' ')" "$(echo "$A" | grep -o 'data-confirm-title=' | wc -l | tr -d ' ')"
+check "delete links have no per-row modal" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/targets" | grep -c 'class="modal hide fade"')" "0"
+check "delete links ask for confirmation" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/targets" | grep -c 'data-confirm-title="Delete a resource"' | awk '{print ($1>0)?"yes":"no"}')" "yes"
+L=$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/users/$AD/docking_jobs")
+for state in "finished:progress-success" "cancelled:progress-muted"; do
+  J=$(sql "select id from docking_jobs where user_id=$AD and status='${state%%:*}' and skipped_compounds=0 order by id limit 1")
+  check "job page: ${state%%:*} job bar is ${state#*:}" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/users/$AD/docking_jobs/$J" | grep -c "class=\"progress ${state#*:}\" id=\"job-progress\"")" "1"
+done
+J=$(sql "select id from docking_jobs where status='finished' and skipped_compounds>0 order by id limit 1")
+if [ -n "$J" ]; then
+  check "job page: compounds not docked turn the bar orange" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/users/$AD/docking_jobs/$J" | grep -c 'class="progress progress-warning" id="job-progress"')" "1"
+  N=$(sql "select skipped_compounds from docking_jobs where id=$J")   # not inside the pipe: docker exec reads stdin
+  check "job page: not docked compounds counted" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/users/$AD/docking_jobs/$J" | grep -c "$N not docked")" "1"
+fi
+check "jobs list: coloured bars" "$(echo "$L" | grep -c 'progress-success docking-progress' | awk '{print ($1>0)?"yes":"no"}')" "yes"
+
 section "3D pose viewer"
 check "viewer page" "$(code g "$B/poses?path=$ENC_POSE" | cut -d' ' -f1)" "200"
 curl -s "$B/poses/data?path=$ENC_POSE" > "$T/pose.json"
@@ -44,12 +66,15 @@ check "Chart.js served" "$(curl -s -o /dev/null -w '%{http_code}' "$B/javascript
 
 if [ -x "$CHROME" ]; then
   section "In a headless browser (real page, recorded JSON)"
-  # page_harness DIR URL JSON: local copy of a page whose $.getJSON returns JSON.
+  # page_harness DIR URL JSON [JAR] [TEST_JS]: local copy of a page whose
+  # $.getJSON returns JSON, optionally fetched with a cookie jar and with a
+  # test script appended.
   page_harness() {
-    mkdir -p "$1"; curl -s "$B$2" > "$1/raw.html"
+    mkdir -p "$1"; curl -s ${4:+-b "$T/$4"} "$B$2" > "$1/raw.html"
     curl -s "$B$(grep -oE '/assets/application-[a-f0-9]+\.js' "$1/raw.html" | head -1)" > "$1/app.js"
     for js in 3Dmol-2.0.4.min.js Chart-2.9.4.min.js; do curl -s "$B/javascripts/vendor/$js" > "$1/$js"; done
     printf '$.getJSON = function () { var d = $.Deferred(); setTimeout(function () { d.resolve(%s); }, 10); return d.promise(); };\n' "$(cat "$3")" > "$1/fake.js"
+    [ -n "$5" ] && cat "$5" >> "$1/fake.js"
     python3 - "$1" <<'PY'
 import sys, re
 d = sys.argv[1]
@@ -69,6 +94,35 @@ PY
   page_harness "$T/chart" "/targets/$TID" "$T/energies.json"
   check "chart is drawn" "$(grep -c '<canvas[^>]*chartjs-render-monitor' "$T/chart/dom.html")" "1"
   check "chart summary" "$(grep -o 'HIV protease: [0-9]* compounds, best -[0-9.]* kcal/mol' "$T/chart/dom.html" | wc -l | tr -d ' ')" "1"
+
+  # Confirmation modal on the admin page: Cancel sends nothing, the confirm
+  # button sends the form, the browser's confirm() is never used.
+  echo '{}' > "$T/empty.json"
+  cat > "$T/confirm_test.js" <<'JS'
+window.nativeConfirms = 0;
+window.confirm = function () { window.nativeConfirms++; return false; };
+$(function () {
+  var sent = 0, button = $('input[data-confirm]').first(), shown = 0, title = '';
+  $(document).on('submit', 'form', function (e) { e.preventDefault(); sent++; return false; });
+  var step = function (f) { setTimeout(f, 800); };
+  button.trigger('click');
+  step(function () {
+    shown = ($('#confirm-modal').data('modal') || {}).isShown ? 1 : 0;   // no CSS here: no 'in' class
+    title = $('#confirm-modal-title').text() === button.data('confirm-title') ? 'title' : 'no-title';
+    $('#confirm-modal-cancel').trigger('click');
+    step(function () {
+      var afterCancel = sent;
+      button.trigger('click');
+      step(function () {
+        $('#confirm-modal-ok').trigger('click');
+        step(function () { $('body').attr('data-confirm-test', [shown, title, afterCancel, sent, window.nativeConfirms].join(':')); });
+      });
+    });
+  });
+});
+JS
+  page_harness "$T/confirm" "/admin" "$T/empty.json" admin1 "$T/confirm_test.js"
+  check "modal shown, Cancel sends nothing, OK sends once, no native confirm" "$(grep -oE 'data-confirm-test="[^"]*"' "$T/confirm/dom.html" | sed 's/.*="//;s/"$//')" "1:title:0:1:0"
 fi
 
 section "Rails errors"

@@ -172,7 +172,7 @@ class DownloadEngine
       return assay_completed(id, aid, 0) unless table_info
     else # the assay is already in the database
       table_info = TableInfo.new(assay_path)
-      notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "assay #{aid} was processed"))
+      notify(AssayNotificationClass.new(id, aid, "AssayProcessed", "assay #{aid} is already in the database"))
     end
     total = table_info.length
     notify(CountNotificationClass.new(id, total, "CompoundCount", "total compound #{total}", aid))
@@ -233,7 +233,7 @@ class DownloadEngine
         notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "the compound #{cid} is being processed by another process", aid))
       else
         ready << cid
-        notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "compound #{cid} was processed", aid))
+        notify(CompoundNotificationClass.new(id, cid, "CompoundProcessed", "compound #{cid} is already in the database", aid))
       end
     end
     return ready if to_download.empty?
