@@ -297,11 +297,12 @@ class DockingServer
     name.gsub(/\s+/, '_')
   end
 
+  # Name of a result file, built from the names of the target, the receptor
+  # type and the compound. They are sanitised: a receptor type named
+  # "Cathepsin B (1GMY)" must not put brackets in a file name.
   def get_file_name(code, *args)
-    result = ""
     args << code
-    result = underscore(args.join(" "))
-    result
+    safe_name(args.join(" "))
   end
 
 end

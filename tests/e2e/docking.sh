@@ -20,8 +20,8 @@ login admin1 admin1 "$PASSWORD" >/dev/null
 
 section "Receptor from a PDB file"
 t=$(token admin1 /receptor_types/new)
-curl -s -o /dev/null -c "$T/admin1" -b "$T/admin1" --data-urlencode "authenticity_token=$t" --data-urlencode "receptor_type[name]=HIV protease" "$B/receptor_types"
-RT=$(sql "select id from receptor_types where name='HIV protease'")
+curl -s -o /dev/null -c "$T/admin1" -b "$T/admin1" --data-urlencode "authenticity_token=$t" --data-urlencode "receptor_type[name]=HIV protease (1HSG)" "$B/receptor_types"
+RT=$(sql "select id from receptor_types where name='HIV protease (1HSG)'")
 t=$(token admin1 "/targets/$TID/prepare_receptors/new")
 check "admin uploads a .pdb receptor" "$(code admin1 -F "authenticity_token=$t" -F "prepare_receptor[target_id]=$TID" -F "prepare_receptor[receptor_type_id]=$RT" \
   -F "prepare_receptor[uploaded_receptor]=@$PDB;filename=1hsg_protein.pdb" -F "prepare_receptor[center_x]=13.07" -F "prepare_receptor[center_y]=22.47" -F "prepare_receptor[center_z]=5.56" \
@@ -42,6 +42,7 @@ check "3 compounds processed" "$(job_json admin1 "$AD" "$J1" | json_get processe
 check "3 log lines" "$(sql "select count(*) from docking_job_logs where docking_job_id=$J1")" "3"
 check "incremental log polling (after=)" "$(curl -s -c "$T/admin1" -b "$T/admin1" "$B/users/$AD/docking_jobs/$J1.json?after=999999999" | python3 -c 'import sys,json; print(len(json.load(sys.stdin)["logs"]))')" "0"
 check "poses stored" "$(sql "select count(distinct compound_id) from receptor_compounds")" "3"
+check "result files are named without shell characters" "$(sql "select count(*) from receptor_compounds where path regexp '[^A-Za-z0-9_./-]'")" "0"
 if [ -n "$MAILPIT" ]; then
   for i in $(seq 1 45); do n=$(curl -s "$MAILPIT/api/v1/messages" | python3 -c 'import sys,json; print(sum(1 for m in json.load(sys.stdin)["messages"] if "docking job" in m["Subject"]))'); [ "$n" -gt 0 ] && break; sleep 2; done
   check "finished-job e-mail sent" "$n" "1"
@@ -67,7 +68,7 @@ check "each compound processed once" "$(sql "select processed_compounds, count(l
 
 section "Exports"
 curl -s -o "$T/rank.csv" "$B/users/$TID/compound_ranking/filter_one/$RT/filter_two/$RT/filter_tree/$RT.csv"
-check "ranking CSV header" "$(head -1 "$T/rank.csv" | tr -d '\r')" "rank,cid,HIV protease (kcal/mol),HIV protease (kcal/mol),HIV protease (kcal/mol)"
+check "ranking CSV header" "$(head -1 "$T/rank.csv" | tr -d '\r')" "rank,cid,HIV protease (1HSG) (kcal/mol),HIV protease (1HSG) (kcal/mol),HIV protease (1HSG) (kcal/mol)"
 check "ranking CSV rows" "$(awk -F, 'NR>1 && $3!=""' "$T/rank.csv" | wc -l | tr -d ' ')" "$(sql "select count(distinct compound_id) from receptor_compounds")"
 curl -s -o "$T/poses.tgz" "$B/targets/$TID/poses?job_id=$J1"
 check "job poses archive" "$(tar tzf "$T/poses.tgz" | grep -c '\.pdbqt$')" "3"

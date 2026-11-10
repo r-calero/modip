@@ -62,7 +62,10 @@ class SDFCompound < CompoundFile
     super(dir, name)
     @sdf = SDFParser.parser(dir)[0]
     @array_struct = @sdf.struct.scan(/.+$/)
-    @atom_number = @array_struct[2].scan(/\d+/)[0].to_i
+    # Counts line of the molfile: fixed columns, atoms in 1-3 and bonds in
+    # 4-6. They run together from 100 atoms on ("177185" = 177 atoms, 185
+    # bonds), so it cannot be read by scanning for numbers.
+    @atom_number = @array_struct[2].to_s[0, 3].to_i
     arr = try_get_expr(@@coordinate_type)
     if arr.length == 3
       @coordinate = arr[0].to_i

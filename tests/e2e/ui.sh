@@ -8,7 +8,7 @@
 . "$(dirname "$0")/lib.sh"
 CHROME=${CHROME:-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"}
 
-TID=$(sql "select id from targets where name='Test target'"); RT=$(sql "select id from receptor_types where name='HIV protease'")
+TID=$(sql "select id from targets where name='Test target'"); RT=$(sql "select id from receptor_types where name='HIV protease (1HSG)'")
 CID=$(sql "select c.cid from compounds c join receptor_compounds rc on rc.compound_id=c.id order by rc.value limit 1")
 COMP=$(sql "select id from compounds where cid='$CID'")
 POSE=$(sql "select rc.path from receptor_compounds rc join compounds c on c.id=rc.compound_id where c.cid='$CID' limit 1")
@@ -60,7 +60,7 @@ check "3Dmol.js served" "$(curl -s -o /dev/null -w '%{http_code}' "$B/javascript
 
 section "Energy chart"
 curl -s "$B/targets/$TID/energies.json" > "$T/energies.json"
-check "chart data: one series per receptor type" "$(python3 -c 'import json,sys; print([s["name"] for s in json.load(open(sys.argv[1]))["series"]])' "$T/energies.json")" "['HIV protease']"
+check "chart data: one series per receptor type" "$(python3 -c 'import json,sys; print([s["name"] for s in json.load(open(sys.argv[1]))["series"]])' "$T/energies.json")" "['HIV protease (1HSG)']"
 check "chart data: every docked compound counted once" "$(python3 -c 'import json,sys; print(sum(json.load(open(sys.argv[1]))["series"][0]["counts"]))' "$T/energies.json")" "$(sql "select count(distinct compound_id) from receptor_compounds")"
 check "Chart.js served" "$(curl -s -o /dev/null -w '%{http_code}' "$B/javascripts/vendor/Chart-2.9.4.min.js")" "200"
 
@@ -93,7 +93,7 @@ PY
   check "viewer shows no load error (text only in the script)" "$(grep -o 'could not be loaded' "$T/viewer/dom.html" | wc -l | tr -d ' ')" "1"
   page_harness "$T/chart" "/targets/$TID" "$T/energies.json"
   check "chart is drawn" "$(grep -c '<canvas[^>]*chartjs-render-monitor' "$T/chart/dom.html")" "1"
-  check "chart summary" "$(grep -o 'HIV protease: [0-9]* compounds, best -[0-9.]* kcal/mol' "$T/chart/dom.html" | wc -l | tr -d ' ')" "1"
+  check "chart summary" "$(grep -o 'HIV protease (1HSG): [0-9]* compounds, best -[0-9.]* kcal/mol' "$T/chart/dom.html" | wc -l | tr -d ' ')" "1"
 
   # Confirmation modal on the admin page: Cancel sends nothing, the confirm
   # button sends the form, the browser's confirm() is never used.

@@ -6,7 +6,7 @@ Cada servidor de MODIP corre en su propio contenedor. Se comunican por dRuby
 dentro de la red interna `modip`; solo nginx publica puertos.
 
 ```
- Internet ──HTTPS──> nginx ──HTTP──> web (PIAM, Rails 3.2.8 + Puma 1.6.3)
+ Internet ──HTTPS──> nginx ──HTTP──> web (PIAM, Rails 3.2.22.5 + Puma 1.6.3)
                                       │ dRuby            ▲ dRuby (notificaciones)
                                       ├──> download ─────┘──> database ──> mysql
                                       │    (PubChem REST)     (ActiveRecord)
@@ -40,7 +40,7 @@ las rutas de los compuestos guardadas en MySQL apuntan a él.
 |---|---|---|
 | Ruby | 2.2.10 (Debian 8) | La más nueva que ejecuta el `Gemfile.lock` sin cambiar ninguna gema (json 1.8.3 no compila en Ruby ≥ 2.4) |
 | Bundler | 1.11.2 | La que generó el `Gemfile.lock` |
-| Gemas | Las del `PIAM/Gemfile.lock` (Rails 3.2.8, mysql2 0.3.17, therubyracer 0.12.1…) | Sin cambios |
+| Gemas | Las del `PIAM/Gemfile.lock` (Rails 3.2.22.5, mysql2 0.3.17, therubyracer 0.12.1…) | Sin cambios |
 | download_engine / entrez / docking | 2.0.0 / 0.5.8.3 / 0.0.1 | Se compilan desde este repositorio |
 | MySQL | 5.7.44, `sql_mode=NO_ENGINE_SUBSTITUTION` | Compatible con el cliente MySQL 5.5 de mysql2 0.3.17 y con el volcado de 5.5 |
 | Open Babel / AutoDock Vina / MGLTools | 2.3.2 / 1.1.2 / 1.5.7 | Paquetes de Debian 8 |

@@ -1,3 +1,4 @@
+require 'shellwords'
 
 class DockingManager
 
@@ -31,8 +32,8 @@ class DockingManager
     	receptor_path = File.join(dir, "prepare_receptor4.py")
       ligand_path = File.join(dir, "prepare_ligand4.py")
       if File.exist?(receptor_path) or File.exist?(ligand_path)
-      	@receptor_command = "pythonsh #{receptor_path}"
-      	@ligand_command = "pythonsh #{ligand_path}"
+      	@receptor_command = ["pythonsh", receptor_path]
+      	@ligand_command = ["pythonsh", ligand_path]
       	break
       end
     end
@@ -40,40 +41,23 @@ class DockingManager
   end
 
   def babel(input, output, input_extension, output_extension)
-    pid = fork do
-			exec("#{@babel_command} -i#{input_extension} #{input} -o#{output_extension} #{output}")
-		  end
-	@pids << pid
-	Process.wait
-	@pids.delete(pid)
+    run(@babel_command, "-i#{input_extension}", input, "-o#{output_extension}", output)
   end
 
   # options: extra prepare_receptor4.py flags, e.g. "-A checkhydrogens".
   def prepare_receptor(input, output, options = "")
-    require 'shellwords'
-    `#@receptor_command -r #{Shellwords.escape(input)} -o #{Shellwords.escape(output)} #{options}`
+    run(@receptor_command, "-r", input, "-o", output, *Shellwords.split(options.to_s),
+        [:out, :err] => File::NULL)
   end
 
   def prepare_ligand(input, output)
-    pid = fork do
-				exec("#{@ligand_command} -l #{input} -o #{output}")
-			end
-	@pids << pid
-	Process.wait
-	@pids.delete(pid)
+    run(@ligand_command, "-l", input, "-o", output)
   end
 
   def autodock_vina(params)
-    args = ""
-    params.each do |key, value|
-      args += "--#{key} #{value} "
-    end
-    pid = fork do
-				exec("#{@autodock_vina_command} #{args}")
-			end
-	@pids << pid
-	Process.wait
-	@pids.delete(pid)
+    args = []
+    params.each { |key, value| args << "--#{key}" << value }
+    run(@autodock_vina_command, *args)
   end
 
   def wait_process_finish()
@@ -84,6 +68,23 @@ class DockingManager
 		end
 	end
 
+  end
+
+  private
+
+  # Runs a program without a shell. The arguments carry names of targets,
+  # receptor types and compounds, and a name such as "Cathepsin B (1GMY)"
+  # would otherwise be split or interpreted by the shell.
+  # command: the program, as a String or as an array (program plus its own
+  # arguments). An options Hash at the end goes to exec (redirections).
+  def run(command, *args)
+    options = args.last.is_a?(Hash) ? args.pop : {}
+    argv = (command.is_a?(Array) ? command : [command]).map { |part| part.to_s }
+    argv += args.map { |arg| arg.to_s }
+    pid = fork { exec(*argv, options) }
+    @pids << pid
+    Process.wait
+    @pids.delete(pid)
   end
 
 end

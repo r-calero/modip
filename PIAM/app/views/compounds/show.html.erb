@@ -15,6 +15,9 @@
         <%= content %>
     <% end %>
     &nbsp;
+    <b>Molecular Weight:</b>
+    <%= @compound.molecular_weight %> g/mol
+    &nbsp;
     <b>IUPAC TRADITIONAL NAME:</b>
     <%= @compound.traditional_name %>
   </div>
@@ -89,7 +92,7 @@
     <tbody>
        <tr>
          <td><b>XLOGP3</b></td>
-         <td><%= ("%.5f" %@compound.molecular_weight).sub(/0+$|\.0+$/,'') %></td>
+         <td><%= @compound.xlogp3 %></td>
          <td><b> TPSA </b></td>
          <td><%= @compound.tpsa %></td>
          <td><b> HBond Acceptor </b></td>

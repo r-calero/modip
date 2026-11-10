@@ -19,3 +19,5 @@ deploy/worker/.env.worker
 *.tar.gz
 
 Backup-codes*.txt
+# Demo deck (screenshots, slides): built locally, not part of the repo
+demo-deck/
