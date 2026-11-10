@@ -2,24 +2,33 @@
 <%= stylesheet_link_tag 'compounds', :media => 'all' %>
 
 <div class="row-fluid">
-  <div class="pull-right" style="margin-left: 15px;"><%= structure_image(@compound.cid, 200) %></div>
-  <div class="span12">
+  <div class="span9">
     <span style="font-size: medium; ">
       <b>Compound Summary</b>
       (CID <%= link_to @compound.cid, compound_path(@compound) %>)
     </span>
+    <div class="smalltext" style="margin-top: 8px;">
+      <div>
+        <b>Molecular Formula:</b>
+        <%= format_molecular_formula(@compound.molecular_formula) do |content| %>
+            <%= content %>
+        <% end %>
+        <% if @compound.molecular_weight.to_f > 0 %>
+          &nbsp;
+          <b>Molecular Weight:</b>
+          <%= @compound.molecular_weight %> g/mol
+        <% end %>
+      </div>
+      <% if @compound.traditional_name.present? %>
+        <div style="margin-top: 4px;">
+          <b>IUPAC TRADITIONAL NAME:</b>
+          <%= @compound.traditional_name %>
+        </div>
+      <% end %>
+    </div>
   </div>
-  <div class="span12 smalltext">
-    <b>Molecular Formula:</b>
-    <%= format_molecular_formula(@compound.molecular_formula) do |content| %>
-        <%= content %>
-    <% end %>
-    &nbsp;
-    <b>Molecular Weight:</b>
-    <%= @compound.molecular_weight %> g/mol
-    &nbsp;
-    <b>IUPAC TRADITIONAL NAME:</b>
-    <%= @compound.traditional_name %>
+  <div class="span3" style="text-align: right;">
+    <%= structure_image(@compound.cid, 200) %>
   </div>
 </div>
 <div class="row-fluid">
