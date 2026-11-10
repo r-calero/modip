@@ -18,7 +18,7 @@ docker compose up -d 2>&1 | grep -i " error"
 docker run -d --name modip-mailpit --network modip_net --network-alias mailpit -p 127.0.0.1:18025:8025 axllent/mailpit:v1.21.8 --smtp-auth-accept-any --smtp-auth-allow-insecure >/dev/null
 for i in $(seq 1 60); do s=$(docker compose ps -a --format '{{.Service}}={{.Health}}' | tr '\n' ' '); echo "$s" | grep -q "nginx=healthy" && break; sleep 5; done
 echo "stack: $s"
-for suite in ${SUITES:-security docking downloads conversion ui}; do
+for suite in ${SUITES:-security docking names downloads conversion ui}; do
   echo "### $suite"
   tests/e2e/$suite.sh 2>&1 | grep -E "FAIL|PASS=|progress seen|download time|conversions ended"
 done

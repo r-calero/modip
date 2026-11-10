@@ -21,7 +21,7 @@ export COMPOSE_FILE=docker-compose.yml:docker-compose.apache.yml \
 docker compose down -v        # empty database
 docker compose up -d --build
 
-tests/e2e/security.sh && tests/e2e/docking.sh && tests/e2e/downloads.sh && tests/e2e/conversion.sh && tests/e2e/ui.sh
+tests/e2e/security.sh && tests/e2e/docking.sh && tests/e2e/names.sh && tests/e2e/downloads.sh && tests/e2e/conversion.sh && tests/e2e/ui.sh
 ```
 
 `tests/e2e/run_all.sh` does all of the above with these settings (plus a
@@ -32,6 +32,7 @@ Mailpit container) and prints only the failures and the totals of each suite.
 | `security.sh` | Roles and ownership, mass assignment, file access, CVE-2013-0156, registration and login protection, bcrypt, password reset, headers; downloads AID 1000 from PubChem |
 | `docking.sh` | PDB receptor preparation, docking queue and progress, cancel, restart recovery, exports, admin page |
 | `ui.sh` | Layout, flash messages, structure images, 3D viewer, energy chart, confirmation modal and docking bar colours (also in headless Chrome when available) |
+| `names.sh` | Targets and receptor types with awkward names: the target model refuses unsafe ones, a receptor type named `Catepsina B (1GMY) "nitrilo" 50%` still prepares, docks, stores poses with sanitised file names, and exports |
 | `downloads.sh` | Several assays downloaded in parallel, download time, progress bar of the queries page (JSON and, with Chrome, the page itself, colours included), conversions queued, result of each run (complete, already stored, stopped, interrupted) |
 | `conversion.sh` | 2D->3D conversion queue: docking jobs waiting for conversions, timeout, manual retry, mutual TLS (unknown, foreign and missing certificates, plain druby), validation of results, leases, worker shutdown, worker registry, remote worker (`deploy/worker`), backfill |
 
