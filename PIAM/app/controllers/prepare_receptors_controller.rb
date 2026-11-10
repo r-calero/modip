@@ -44,6 +44,7 @@ class PrepareReceptorsController < ApplicationController
   # POST /prepare_receptors
   # POST /prepare_receptors.json
   def create
+    @target = params[:target_id] # the form needs it to render again on an error
     @prepare_receptor = PrepareReceptor.new(params[:prepare_receptor])
     respond_to do |format|
       if @prepare_receptor.save

@@ -38,6 +38,22 @@ fi
 RT=$(sql "select id from receptor_types where name like '%nitrilo%' order by id limit 1")
 check "receptor type stored verbatim (the model allows any name)" "$(test -n "$RT" && echo yes || echo no)" "yes"
 
+section "The models refuse what they cannot store"
+t=$(token admin1 /receptor_types/new)
+check "a receptor type longer than the column is refused" "$(code admin1 --data-urlencode "authenticity_token=$t" --data-urlencode "receptor_type[name]=$(python3 -c 'print("X"*60)')" "$B/receptor_types" | cut -d' ' -f1)" "200"
+check "it was not stored truncated" "$(sql "select count(*) from receptor_types where name like 'XXXXX%'")" "0"
+t=$(token admin1 /receptor_types/new)
+check "an empty receptor type is refused" "$(code admin1 --data-urlencode "authenticity_token=$t" --data-urlencode "receptor_type[name]=   " "$B/receptor_types" | cut -d' ' -f1)" "200"
+t=$(token admin1 /receptor_types/new)
+check "a duplicate receptor type is refused" "$(code admin1 --data-urlencode "authenticity_token=$t" --data-urlencode "receptor_type[name]=$RTYPE" "$B/receptor_types" | cut -d' ' -f1)" "200"
+t=$(token admin1 "/targets/$TID/prepare_receptors/new")
+check "a receptor without a type answers with the form, not a 500" "$(code admin1 -F "authenticity_token=$t" -F "prepare_receptor[target_id]=$TID" -F "prepare_receptor[receptor_type_id]=" \
+  -F "prepare_receptor[uploaded_receptor]=@$PDB;filename=1hsg_protein.pdb" \
+  -F "prepare_receptor[center_x]=13.07" -F "prepare_receptor[center_y]=22.47" -F "prepare_receptor[center_z]=5.56" \
+  -F "prepare_receptor[size_x]=22" -F "prepare_receptor[size_y]=22" -F "prepare_receptor[size_z]=22" \
+  -F "prepare_receptor[energy_range]=3" -F "prepare_receptor[number_of_conformer]=3" \
+  -F "prepare_receptor[cpu_number]=4" "$B/targets/$TID/prepare_receptors" | cut -d' ' -f1)" "200"
+
 section "Receptor preparation (AutoDockTools through the new call path)"
 if [ -z "$(sql "select id from prepare_receptors where target_id=$TID")" ]; then
 t=$(token admin1 "/targets/$TID/prepare_receptors/new")

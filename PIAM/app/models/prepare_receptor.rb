@@ -6,6 +6,11 @@ class PrepareReceptor < ActiveRecord::Base
   belongs_to :receptor_type
   has_many :receptor_compounds
   
+  # Checked before set_receptor_file runs: without them a missing target or
+  # receptor type reached the callback and the insert, and the page answered
+  # with a server error instead of the form.
+  validates :target_id, :presence => true
+  validates :receptor_type_id, :presence => true
   validates :receptor, :format => {:with => %r{\.(pdbqt)$}i, :message => 'must be a path from .pdbqt file.'}, :on => :save
   validates :energy_range, :numericality => {:only_integer => true, :greater_than_or_equal_to => 1}
   validates_numericality_of  :center_x, :center_y, :center_z, :size_x, :size_y, :size_z 
