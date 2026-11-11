@@ -7,6 +7,7 @@
   <div class="span8">
     <div id="pose-viewer" style="width: 100%; height: 480px; position: relative; border: 1px solid #ddd;" aria-label="3D view of the docking pose"></div>
     <p class="muted" style="margin-top: 5px;">Drag to rotate, scroll to zoom. Receptor as cartoon, residues within 5 &Aring; as lines, ligand as sticks.</p>
+    <div id="pose-warning" class="alert alert-block" style="display: none; padding: 6px 10px;"></div>
   </div>
   <div class="span4">
     <%= structure_image(@compound.cid, 180) %>
@@ -23,6 +24,38 @@
       <%= hidden_field_tag 'resource', @pose.path %>
       <%= submit_tag 'Download pose (.pdbqt)', :class => 'btn btn-small btn-primary' %>
     <% end %>
+
+    <h4 style="margin-top: 18px;">View</h4>
+    <label class="checkbox"><input type="checkbox" id="box-visible" checked> Show the search box</label>
+    <label style="margin-top: 6px;">Centre on</label>
+    <select id="view-centre" class="input-block-level">
+      <option value="box">The search box</option>
+      <option value="ligand">The ligand</option>
+      <option value="receptor">The whole receptor</option>
+    </select>
+    <p class="muted" style="margin-top: 6px; font-size: 11px;">
+      Box used for this docking: centre
+      <%= @receptor.center_x %>, <%= @receptor.center_y %>, <%= @receptor.center_z %> &middot;
+      size <%= @receptor.size_x %> &times; <%= @receptor.size_y %> &times; <%= @receptor.size_z %> &Aring;.
+    </p>
+    <p style="margin-top: 4px;"><a href="#" id="box-adjust-toggle" style="font-size: 11px;">Move the box &raquo;</a></p>
+    <div id="box-adjust" style="display: none;">
+      <table class="table table-condensed" style="margin-bottom: 4px;">
+        <tr><th style="border: 0; padding: 2px;"></th><th style="border: 0; padding: 2px; font-weight: normal;">centre</th><th style="border: 0; padding: 2px; font-weight: normal;">size</th></tr>
+        <% %w(x y z).each do |axis| %>
+          <tr>
+            <td style="border: 0; padding: 2px;"><b><%= axis %></b></td>
+            <td style="border: 0; padding: 2px;"><input type="number" step="0.5" class="input-mini box-field" id="box-c<%= axis %>" value="<%= @receptor.send("center_#{axis}") %>"></td>
+            <td style="border: 0; padding: 2px;"><input type="number" step="1" min="1" class="input-mini box-field" id="box-s<%= axis %>" value="<%= @receptor.send("size_#{axis}") %>"></td>
+          </tr>
+        <% end %>
+      </table>
+      <button class="btn btn-mini" id="box-reset" type="button">Reset to the stored box</button>
+      <p class="muted" style="margin-top: 6px; font-size: 11px;">
+        Moving the box here only changes this view. The poses above were computed with the stored box;
+        to dock against a different one, add another receptor to the target.
+      </p>
+    </div>
   </div>
 </div>
 
@@ -30,7 +63,93 @@
 <script type="text/javascript">
   $(function () {
     var viewer = $3Dmol.createViewer(document.getElementById("pose-viewer"), { backgroundColor: "white" });
-    var models = [], receptorModel = null;
+    var models = [], receptorModel = null, boxShape = null, cornerModel = null, current = 0;
+    // The box AutoDock Vina searched, as stored with the receptor.
+    var STORED = {
+      cx: <%= @receptor.center_x.to_f %>, cy: <%= @receptor.center_y.to_f %>, cz: <%= @receptor.center_z.to_f %>,
+      sx: <%= @receptor.size_x.to_f %>, sy: <%= @receptor.size_y.to_f %>, sz: <%= @receptor.size_z.to_f %>
+    };
+
+    function boxFromFields() {
+      var b = {}, ok = true;
+      $.each(["cx", "cy", "cz", "sx", "sy", "sz"], function (i, k) {
+        var v = parseFloat($("#box-" + k).val());
+        if (isNaN(v)) { ok = false; }
+        b[k] = v;
+      });
+      return ok ? b : STORED;
+    }
+
+    function fillFields(b) {
+      $.each(["cx", "cy", "cz", "sx", "sy", "sz"], function (i, k) { $("#box-" + k).val(b[k]); });
+    }
+
+    // Eight invisible atoms at the corners, so the view can frame the box
+    // exactly the way it frames a model.
+    function cornerXYZ(b) {
+      var lines = ["8", "search box"];
+      $.each([-1, 1], function (i, ix) {
+        $.each([-1, 1], function (j, iy) {
+          $.each([-1, 1], function (k, iz) {
+            lines.push("C " + (b.cx + ix * b.sx / 2).toFixed(3) + " " +
+                              (b.cy + iy * b.sy / 2).toFixed(3) + " " +
+                              (b.cz + iz * b.sz / 2).toFixed(3));
+          });
+        });
+      });
+      return lines.join("\n") + "\n";
+    }
+
+    function drawBox() {
+      if (boxShape) { viewer.removeShape(boxShape); boxShape = null; }
+      if (cornerModel) { viewer.removeModel(cornerModel); cornerModel = null; }
+      var b = boxFromFields();
+      cornerModel = viewer.addModel(cornerXYZ(b), "xyz");
+      cornerModel.setStyle({}, {});          // present for framing, never drawn
+      if ($("#box-visible").is(":checked")) {
+        boxShape = viewer.addBox({
+          center: { x: b.cx, y: b.cy, z: b.cz },
+          dimensions: { w: b.sx, h: b.sy, d: b.sz },
+          wireframe: true, color: 0xE2725B
+        });
+      }
+      return b;
+    }
+
+    // Warns when a pose presses against a face: usually a box that is too small.
+    function checkWall(b) {
+      var text = splitModels(window.poseText)[current], worst = 1e9;
+      $.each(text.split("\n"), function (i, line) {
+        if (!/^(ATOM|HETATM)/.test(line)) { return; }
+        var p = [parseFloat(line.substr(30, 8)), parseFloat(line.substr(38, 8)), parseFloat(line.substr(46, 8))];
+        var c = [b.cx, b.cy, b.cz], s = [b.sx, b.sy, b.sz];
+        $.each(p, function (k, v) {
+          if (isNaN(v)) { return; }
+          worst = Math.min(worst, s[k] / 2 - Math.abs(v - c[k]));
+        });
+      });
+      var w = $("#pose-warning");
+      if (worst < 1.0) {
+        w.attr("class", "alert alert-block").html(
+          "<b>This pose reaches the edge of the box</b> (" + worst.toFixed(1) +
+          " &Aring; to the nearest face). A box that is too small can cut off the real binding mode.").show();
+      } else {
+        w.hide();
+      }
+    }
+
+    function recentre(b) {
+      var mode = $("#view-centre").val();
+      if (mode === "ligand" && models.length) {
+        viewer.zoomTo({ model: models[0] });
+        viewer.zoom(0.6);
+      } else if (mode === "receptor" && receptorModel) {
+        viewer.zoomTo({ model: receptorModel });
+      } else if (cornerModel) {
+        viewer.zoomTo({ model: cornerModel });
+        viewer.zoom(0.9);
+      }
+    }
 
     // Vina writes every pose as MODEL ... ENDMDL in the same file.
     function splitModels(text) {
@@ -40,16 +159,25 @@
     }
 
     function show(index) {
+      current = index;
       $.each(models, function (i, m) { viewer.removeModel(m); });
       models = [viewer.addModel(splitModels(window.poseText)[index], "pdbqt")];
       models[0].setStyle({}, { stick: { radius: 0.2, colorscheme: "greenCarbon" } });
       receptorModel.setStyle({}, { cartoon: { color: "spectrum", opacity: 0.85 } });
       receptorModel.setStyle({ within: { distance: 5, sel: { model: models[0] } } }, { cartoon: { color: "spectrum", opacity: 0.85 }, line: {} });
-      viewer.zoomTo({ model: models[0] });
-      viewer.zoom(0.6);
+      var b = drawBox();
+      recentre(b);
       viewer.render();
+      checkWall(b);
       $("#pose-models tr").removeClass("info");
       $("#pose-models tr[data-model='" + index + "']").addClass("info");
+    }
+
+    function redraw() {
+      var b = drawBox();
+      recentre(b);
+      viewer.render();
+      checkWall(b);
     }
 
     $.getJSON("<%= data_poses_path(:path => @pose.path) %>").done(function (data) {
@@ -61,5 +189,9 @@
     });
 
     $("#pose-models").on("click", "tr[data-model]", function () { show(parseInt($(this).attr("data-model"), 10)); });
+    $("#box-visible, #view-centre").on("change", redraw);
+    $(".box-field").on("change", redraw);
+    $("#box-reset").on("click", function () { fillFields(STORED); redraw(); });
+    $("#box-adjust-toggle").on("click", function (e) { e.preventDefault(); $("#box-adjust").toggle(); });
   });
 </script>
